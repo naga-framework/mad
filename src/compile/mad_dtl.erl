@@ -41,7 +41,6 @@ compile_erlydtl_files(Opts) ->
 
     Files = filelib:fold_files(DocRoot, SourceExt, true,
                                fun(F, Acc) -> [F|Acc] end, []),
-
     Compile = fun(F) ->
         ModuleName = module_name(F, SourceExt, ModuleExt),
         BeamFile = file_to_beam(OutDir, atom_to_list(ModuleName)),

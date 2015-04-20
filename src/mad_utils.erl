@@ -79,6 +79,8 @@ atomize("att"++_) -> attach;
 atomize("sto"++_) -> stop;
 atomize("cle"++_) -> clean;
 atomize("rel"++_) -> release;
+atomize("dtl"++_) -> dtl;
+atomize("naga"++_) -> naga;
 atomize(Else) -> Else.
 
 atomize_params_commands(Params) -> atomize_params_commands(Params,[]).

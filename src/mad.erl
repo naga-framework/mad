@@ -5,9 +5,8 @@
 
 main([]) -> help();
 main(Params) ->
-
     {Other,FP} = mad_utils:fold_params(Params),
-    io:format("Params: ~p~n\r",[FP]),
+    %io:format("Params: ~p~n\r",[FP]),
     case Other == [] of
          true -> skip;
          false -> io:format("Unknown Command or Parameter ~p~n\r",[Other]), help() end,
@@ -41,11 +40,11 @@ deps(Cwd, ConfigFile, Conf, Params) ->
 
 %% compile dependencies and the app
 compile(Cwd, ConfigFile, Conf, Params) ->
-    io:format("Compile Params: ~p~n\r",[Params]),
+    %io:format("Compile Params: ~p~n\r",[Params]),
     case Params of
          [] -> mad_compile:'compile-deps'(Cwd, ConfigFile, Conf);
          __ -> [ mad_compile:dep(Cwd, Conf, ConfigFile, Name) || Name <- Params ]
-    end,
+    end,    
     mad_compile:'compile-apps'(Cwd, ConfigFile, Conf), false.
 
 %% reltool apps resolving
@@ -98,7 +97,52 @@ static(_Cwd,_ConfigFileName,Config,Params) ->
     io:format("Compile Static Params: ~p~n",[Params]),
     mad_static:main(Config, Params), false.
 
-version() -> "2.2".
+dtl(_Cwd,_ConfigFileName,_Config,["strings", Path]) ->
+    %%FIXME: find erlydtl from config
+    code:replace_path(erlydtl, "./deps/erlydtl/ebin"),
+    case filelib:is_dir(Path) of
+        true ->
+            case mad_naga:opts(Path) of
+                {true, Opts} -> 
+                    Files = mad_naga:files(view, Path, Opts), 
+                    [begin 
+                         %FF = case hd(F) of $/ -> F; _ -> filename:join([_Cwd, F]) end,
+                         print_str(F)
+                     end||F<-Files],false;
+                _ ->
+                    io:format("Not Naga App~n"), 
+                    true
+            end;
+        false ->
+            %FilePath = case hd(Path) of $/ -> Path; _ -> filename:join([_Cwd, Path]) end,
+            print_str(Path),
+            false
+    end.
+
+    
+print_str(File) ->
+    %io:format("~p~n",[File]),
+    case catch sources_parser:parse_file(File) of
+        {error, _} -> skip;
+        List -> R = lists:reverse(List),
+                Sep = ",",
+                [begin
+                     %io:format("~p~n",[P]),
+                     [_F, Str, Line, Col] = sources_parser:phrase_info([file, msgid, line, col], P), 
+                     io:format("~p~s~ts~s~p~s~p~n",[File,Sep, Str,Sep, Line,Sep, Col])
+                     %[F,Str,Line,Col]
+                 end || P <- R, is_tuple(P)]
+    end.
+             
+naga(Cwd,_ConfigFileName,Config,["create", AppName ]=Params)->
+    io:format("Create Naga App Params: ~p~n",[Params]),
+    mad_create:app(Params), false;
+    
+naga(Cwd,_ConfigFileName,Config,Params)->
+    io:format("naga ~p~n",[Params]),
+    mad_naga:cmd(Cwd,_ConfigFileName,Config,Params).
+
+version() -> "2.2.1".
 help(Reason, Data) -> help(io_lib:format("~s ~p", [Reason, Data])).
 help(Msg) -> io:format("Error: ~s~n~n", [Msg]), help().
 help() ->
@@ -107,8 +151,9 @@ help() ->
     io:format("    invoke := mad params~n"),
     io:format("    params := [] | run params ~n"),
     io:format("       run := command [ options ]~n"),
-    io:format("    commad := app | lib | deps | compile | release | bundle~n"),
-    io:format("              clean | start | stop | attach | repl ~n"),
+    io:format("   command := app | lib | deps | compile | release | bundle~n"),
+    io:format("              clean | start | stop | attach | repl~n"), 
+    mad_naga:help(),
     return(0).
 
 return(X) -> X.
