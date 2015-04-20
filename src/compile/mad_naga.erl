@@ -143,13 +143,10 @@ compile_naga(Path, Opts0) ->
                       end || X <- Files],
             Result = lists:map(fun(X) ->
                                        {App, T} = t(X), H = h(T),
-                                       io:format("~p, ~p, ~p, ~p~n",[App, T, H, X ]),
+                                       %io:format("~p, ~p, ~p, ~p~n",[App, T, H, X ]),
                                        case T of 
                                            view -> ?MODULE:H(App, X, Opts);
-                                           _    -> 
-                                               R = ?MODULE:H(X, Opts),
-                                               io:format("Result ~p~n",[R]),
-                                               R
+                                           _    -> ?MODULE:H(X, Opts),
                                        end
                                end,
                                Files1 
