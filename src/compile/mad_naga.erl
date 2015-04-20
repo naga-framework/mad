@@ -143,10 +143,14 @@ compile_naga(Path, Opts0) ->
                       end || X <- Files],
             Result = lists:map(fun(X) ->
                                        {App, T} = t(X), H = h(T),
-                                       %io:format("~p, ~p, ~p, ~p~n",[App, T, H, X ]),
+                                       io:format("~p, ~p, ~p, ~p~n",[App, T, H, X ]),
                                        case T of 
                                            view -> ?MODULE:H(App, X, Opts);
-                                           _    -> ?MODULE:H(X, Opts) end
+                                           _    -> 
+                                               R = ?MODULE:H(X, Opts),
+                                               io:format("Result ~p~n",[R]),
+                                               R
+                                       end
                                end,
                                Files1 
                               ),
@@ -223,10 +227,12 @@ compile_model(none, File, Opts) ->
     compile_model_none(filename:extension(File), File, Opts);
 compile_model(boss, File, Opts) ->
     Compiler = boss_record_compiler,
+    ErlOpts = proplists:get_value(erl_opts, Opts, []),
+    OutDir = out_dir(Opts),
     Opts1 = [debug_info,
              {pre_revert_transform, fun Compiler:trick_out_forms/2},
              {token_transform,      fun Compiler:process_tokens/1}
-             | Opts] ,
+             , ErlOpts, {out_dir, OutDir}] ,
     Compiler:compile(File, Opts1);
 
 %%FIXME: test ecto model
