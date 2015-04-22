@@ -419,7 +419,7 @@ t(Path) ->
         [_, App, "src", "controller" |_]                     -> {App, controller};
         [_, App, "src", "view", "lib", "tag_html" | _]       -> {App, view_tag_helper};
         [_, App, "src", "view", "lib", "filter_modules" | _] -> {App, view_filter_helper};
-        [_, App, "src", "view", "lib", "tag_modules" | _]    -> {App, view_html_tags};
+        [_, App, "src", "view", "lib", "tag_modules" | _]    -> {App, view_custom_tags};
         [_, App, "src", "view"|_]                            -> {App, view};
         [_, App, "src", "mail", "view"|_]                    -> {App, mail_view};
         [_, App, "src", "lib"|_]                             -> {App, lib};
@@ -448,7 +448,7 @@ h(Type) ->
         view_filter_helper -> compile_erl;
         mail               -> compile_erl;
         view_tag_helper    -> compile_erl;
-        view_html_tags     -> compile_erl;
+        view_custom_tags   -> compile_erl;
         websocket          -> compile_erl; 
         erl                -> compile_erl; 
         erlang             -> compile_erl; 
