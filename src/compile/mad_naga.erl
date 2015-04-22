@@ -146,7 +146,7 @@ compile_naga(Path, Opts0) ->
                                        %io:format("~p, ~p, ~p, ~p~n",[App, T, H, X ]),
                                        case T of 
                                            view -> ?MODULE:H(App, X, Opts);
-                                           _    -> ?MODULE:H(X, Opts),
+                                           _    -> ?MODULE:H(X, Opts)
                                        end
                                end,
                                Files1 
@@ -448,7 +448,7 @@ h(Type) ->
         view_filter_helper -> compile_erl;
         mail               -> compile_erl;
         view_tag_helper    -> compile_erl;
-        view_html_tags     -> compile_view;
+        view_html_tags     -> compile_erl;
         websocket          -> compile_erl; 
         erl                -> compile_erl; 
         erlang             -> compile_erl; 
