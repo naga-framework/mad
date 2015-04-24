@@ -1,5 +1,6 @@
 -module({{appid}}).
 -export([start/0, stop/0]).
+-export([start_db/0]).
 
 start() ->
     application:ensure_all_started({{appid}}).

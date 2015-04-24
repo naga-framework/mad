@@ -4,5 +4,6 @@
         {modules, []},
         {registered, []},
         {applications, [kernel, stdlib, crypto, naga]},
+        {mod, { {{appid}}_app, []}},        
         {env, []}
     ]}.
