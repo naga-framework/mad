@@ -67,6 +67,7 @@ dep(Cwd, _Conf, ConfigFile, Name) ->
             EbinDir = mad_utils:ebin(DepPath),
             file:make_dir(EbinDir),
             code:replace_path(Name,EbinDir),
+            mad_dtl:compile(DepPath,Conf1),
             mad_naga:compile(DepPath,Conf1),
             put(Name, compiled),
             ok
