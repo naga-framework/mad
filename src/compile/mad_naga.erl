@@ -158,6 +158,7 @@ compile_naga(Path, Opts0) ->
             Opts1 = [{root_dir, root_dir(Path)}|Opts0],
             {App, T} = t(Path),
             H = h(T),
+            %io:format("~p, ~p, ~p~n",[App, T, H]),
             case T of 
                 view -> ?MODULE:H(App, Path, Opts1);
                 _    -> ?MODULE:H(Path, Opts1) end
@@ -319,6 +320,7 @@ compile_rest(File, Opts) ->
     compile_rest(AppName, Dir, File, Opts).
 
 compile_rest(AppName, File, Opts) ->    
+    RootDir = proplists:get_value(root_dir, Opts),
     Dir = case proplists:get_value(root_dir, Opts) of
               undefined -> case filename:split(File) of
                                ["deps", AppName |_] -> filename:join([".", "deps", AppName]);
@@ -565,9 +567,12 @@ src_type(Type) ->
 out_dir(Opts) -> dir(ebin_dir,Opts).
 root_dir(Path) ->
     root_dir2(filename:split(Path)).
+
+root_dir2(["..", App | _]) ->
+    filename:join(["..", App]);
 root_dir2(["deps", App | _]) ->
     {ok, Cwd} = file:get_cwd(),
-    filename:join(Cwd, "deps" ++ "/" ++ App);
+    filename:join([Cwd, "deps", App]);
 root_dir2(Path) ->
     filename:dirname(Path).
 
