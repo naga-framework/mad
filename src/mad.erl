@@ -6,7 +6,7 @@
 main([]) -> help();
 main(Params) ->
     {Other,FP} = mad_utils:fold_params(Params),
-    %io:format("Params: ~p~n\r",[FP]),
+    io:format("Params: ~p~n\r",[FP]),
     case Other == [] of
          true -> skip;
          false -> io:format("Unknown Command or Parameter ~p~n\r",[Other]), help() end,
@@ -121,25 +121,22 @@ dtl(_Cwd,_ConfigFileName,_Config,["strings", Path]) ->
 
     
 print_str(File) ->
-    %io:format("~p~n",[File]),
     case catch sources_parser:parse_file(File) of
         {error, _} -> skip;
         List -> R = lists:reverse(List),
                 Sep = ",",
                 [begin
-                     %io:format("~p~n",[P]),
                      [_F, Str, Line, Col] = sources_parser:phrase_info([file, msgid, line, col], P), 
                      io:format("~p~s~ts~s~p~s~p~n",[File,Sep, Str,Sep, Line,Sep, Col])
-                     %[F,Str,Line,Col]
                  end || P <- R, is_tuple(P)]
     end.
              
-naga(Cwd,_ConfigFileName,Config,["create", AppName ]=Params)->
-    io:format("Create Naga App Params: ~p~n",[Params]),
-    mad_create:app(Params), false;
+naga(Cwd,_ConfigFileName,Config,["create" | _]=Params)->
+    %io:format("Create Naga App Params: ~p~n",[Params]),
+    mad_tpl:app(Params), false;
     
 naga(Cwd,_ConfigFileName,Config,Params)->
-    io:format("naga ~p~n",[Params]),
+    %io:format("naga ~p~n",[Params]),
     mad_naga:cmd(Cwd,_ConfigFileName,Config,Params).
 
 version() -> "2.2.1".
@@ -152,7 +149,7 @@ help() ->
     io:format("    params := [] | run params ~n"),
     io:format("       run := command [ options ]~n"),
     io:format("   command := app | lib | deps | up | compile | release | bundle~n"),
-    io:format("              clean | start | stop | attach | repl ~n"),
+    io:format("              clean | start | stop | attach | repl | dtl | naga~n"),
     mad_naga:help(),
     return(0).
 

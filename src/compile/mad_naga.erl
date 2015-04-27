@@ -7,7 +7,8 @@
 help() ->
     io:format("              dtl strings <path/to/tpl>~n"),
     io:format("              naga files <path/2/app> [view|controller|websocket|mail|mail_view|rest|lib]~n"),
-    io:format("              naga modules <path/2/app> [view|controller|websocket|rest]~n").
+    io:format("              naga modules <path/2/app> [view|controller|websocket|rest]~n"),
+    io:format("              naga create name=<appname> ~n").
 
 naga_default_opts() ->
     [
