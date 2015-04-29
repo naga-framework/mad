@@ -3,7 +3,7 @@
 {dir, "{{appid}}"}.
 {dir, "{{appid}}/log"}.
 {dir, "{{appid}}/priv/lang"}.
-{dir, "{{appid}}/priv/migrations"}.
+%{dir, "{{appid}}/priv/migrations"}.
 {dir, "{{appid}}/ebin"}.
 {dir, "{{appid}}/include"}.
 {dir, "{{appid}}/src/lib"}.
@@ -15,6 +15,7 @@
 {dir, "{{appid}}/src/model"}.
 {dir, "{{appid}}/src/controller"}.
 {dir, "{{appid}}/src/websocket"}.
+{dir, "{{appid}}/priv/fcgi/docroot"}.
 %{dir, "{{appid}}/src/mail/view"}.
 %{dir, "{{appid}}/src/test/eunit"}.
 %{dir, "{{appid}}/src/test/functional"}.
@@ -33,6 +34,8 @@
 {template, "naga/priv/project.routes", "{{appid}}/priv/{{appid}}.routes"}.
 {template, "naga/start.sh", "{{appid}}/start.sh"}.
 
+{file, "naga/priv/fcgi/php-fpm.conf", "{{appid}}/priv/fcgi/php-fpm.conf"}.
+{file, "naga/priv/fcgi/docroot/hello.php", "{{appid}}/priv/fcgi/docroot/hello.php"}.
 {file, "naga/src/view/index/index.html", "{{appid}}/src/view/index/index.html"}.
 {file, "naga/src/view/lib/README", "{{appid}}/src/view/lib/README"}.
 {file, "naga/Makefile", "{{appid}}/Makefile"}.
