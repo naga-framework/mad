@@ -120,10 +120,13 @@ compile(Path, Config, false) ->
 %% --------------------------------------------------------------------------------------
 %% compile NAGA App
 %% --------------------------------------------------------------------------------------
-compile_naga(Path, Opts0) ->
+compile_naga(Path, Opts0) ->    
     case filelib:is_dir(Path) of
         true ->
+            %%code:replace_path(o2o_sale, "../o2o_sale/ebin"),            
             Opts = [{root_dir, Path}|Opts0],
+            code:replace_path(list_to_atom(app_name(Path)), out_dir(Opts)),            
+            
             SrcDir = dir(src_dir, Opts),
             InitDir = dir(init_dir, Opts),
             SrcExtensions = proplists:get_value(src_extension, Opts, []),
@@ -155,13 +158,25 @@ compile_naga(Path, Opts0) ->
             emit_app_src(Result, Path, Opts),
             ok;
         false -> 
-            Opts1 = [{root_dir, root_dir(Path)}|Opts0],
-            {App, T} = t(Path),
+            {Path1, Opts2} = case root_dir(Path) of
+                                 "/" -> 
+                                     {ok, Cwd} = file:get_cwd(),                                     
+                                     Temp = (Path -- Cwd) -- "/",
+                                     AppName = filename:basename(Cwd),
+                                     RootDir = filename:join(["..", AppName]),
+                                     RelPath = filename:join([RootDir, Temp]),
+                                     Opts1 = [{root_dir, RootDir}|Opts0],
+                                     {RelPath, Opts1};
+                                 _ ->
+                                     Opts1 = [{root_dir, root_dir(Path)}|Opts0],
+                                     {Path, Opts1}
+                             end,
+            {App, T} = t(Path1),
             H = h(T),
             %io:format("~p, ~p, ~p~n",[App, T, H]),
             case T of 
-                view -> ?MODULE:H(App, Path, Opts1);
-                _    -> ?MODULE:H(Path, Opts1) end
+                view -> ?MODULE:H(App, Path1, Opts2);
+                _    -> ?MODULE:H(Path, Opts2) end
     end.
 
 skip(_File, _Opts) -> [].
@@ -320,7 +335,7 @@ compile_rest(File, Opts) ->
     compile_rest(AppName, Dir, File, Opts).
 
 compile_rest(AppName, File, Opts) ->    
-    RootDir = proplists:get_value(root_dir, Opts),
+    %RootDir = proplists:get_value(root_dir, Opts),
     Dir = case proplists:get_value(root_dir, Opts) of
               undefined -> case filename:split(File) of
                                ["deps", AppName |_] -> filename:join([".", "deps", AppName]);
