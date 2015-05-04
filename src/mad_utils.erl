@@ -90,6 +90,7 @@ atomize("sta"++_) -> start;
 atomize("att"++_) -> attach;
 atomize("sto"++_) -> stop;
 atomize("cle"++_) -> clean;
+atomize("lin"++_) -> ling;
 atomize("rel"++_) -> release;
 atomize("dtl") -> dtl;
 atomize("naga") -> naga;

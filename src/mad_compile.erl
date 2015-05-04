@@ -101,8 +101,9 @@ is_compiled(BeamFile, File) -> mad_utils:last_modified(BeamFile) >= mad_utils:la
     Dirs = mad_utils:sub_dirs(Cwd, ConfigFile, Conf),
     %io:format("Compile Apps: ~p~n",[Dirs]),
     case Dirs of
-        [] -> mad_compile:dep(Cwd, Conf, ConfigFile, Cwd);
-        Apps -> mad_compile:deps(Cwd, Conf, ConfigFile, Apps) end.
+           [] -> mad_compile:dep(Cwd,  Conf, ConfigFile, Cwd);
+         Apps -> mad_compile:dep(Cwd,  Conf, ConfigFile, Cwd),
+                 mad_compile:deps(Cwd, Conf, ConfigFile, Apps) end.
 
 'compile-deps'(Cwd, ConfigFile, Conf) ->
     SortedDeps = mad_lock:ordered_deps(Conf, Cwd),    
