@@ -9,5 +9,12 @@ compile(File,Inc,Bin,Opt,Deps) ->
     Compiled = mad_compile:is_compiled(ErlFile,File),
     if Compiled == false ->
         leex:file(File),
-        mad_erl:compile(ErlFile,Inc,Bin,Opt,Deps); true -> ok end.
+        ret(mad_erl:compile(ErlFile,Inc,Bin,Opt,Deps)); 
+       true -> false end.
+
+ret(error) -> true;
+ret({error,_,_}) -> true;
+ret({ok,_}) -> false;
+ret({ok,_,_}) -> false;
+ret({ok,_,_,_}) -> false.
 

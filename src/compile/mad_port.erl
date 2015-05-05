@@ -8,7 +8,7 @@ replace_env(String, [{K,V}|Env]) ->
 
 compile(Dir,Config) ->
     case mad_utils:get_value(port_specs, Config, []) of
-        [] -> skip;
+        [] -> [false];
          X -> compile_port(Dir,X,Config) end.
 
 compile_port(Dir,Specs,Config) ->
@@ -21,7 +21,10 @@ compile_port(Dir,Specs,Config) ->
               ++ " CFLAGS LDFLAGS -o " ++ Dir ++ "/" ++ Out,
        Args = string:strip(replace_env(Template,Env),both,32),
        {_,Status,Report} = sh:run("cc",string:tokens(Args," "),binary,Dir,Env),
-       case Status == 0 of
-          true -> skip;
-          false -> io:format("Port Compilation Error: ~p",[Report]) end
+       case Status of
+          0 -> false;
+          _ -> io:format("Port Compilation Error: ~p",[Report]), true end
+       %% case Status == 0 of
+       %%    true -> skip;
+       %%    false -> io:format("Port Compilation Error: ~p",[Report]) end
       end || {Sys,Out,Files} <- Specs, Sys == System].

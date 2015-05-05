@@ -24,8 +24,8 @@ compile(File,_Inc,Bin,_Opt,_Deps) ->
     Props2 = [validate_property(X, Modules) || X <- Props1],
     Struct1 = {application, AppName, Props2},
     file:write_file(AppFile, io_lib:format("~p.~n", [Struct1])),
-    ok;
-    true -> ok end.
+    false;
+    true -> false end.
 
 add_modules_property(Properties) ->
     case lists:keyfind(modules, 1, Properties) of

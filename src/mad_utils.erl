@@ -28,6 +28,12 @@ get_value(Key, Opts, Default) ->
 
 script(ConfigFile, Conf, _Name) ->
     File = ConfigFile ++ ".script",
+    case _Name of 
+        "gproc" ->
+            io:format("script ~p ~p ~n",[_Name, Conf]),
+            io:format("script result ~p ~n",[file:script(File, [{'CONFIG', Conf}, {'SCRIPT', File}])]);
+        _ -> skip
+    end,            
     case file:script(File, [{'CONFIG', Conf}, {'SCRIPT', File}]) of
         {ok, {error,_}} -> Conf;
         {ok, Out} -> Out;
@@ -101,5 +107,5 @@ fold_params(Params) ->
            E -> {[E|Current],Result} end
       end, {[],[]}, Atomized).
 
-compile(_,_,_,_,_) -> ok.
+compile(_,_,_,_,_) -> false.
 

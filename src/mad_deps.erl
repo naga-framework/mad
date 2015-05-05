@@ -21,6 +21,7 @@ fetch(_, _Config, _, []) -> ok;
 fetch(Cwd, Config, ConfigFile, [H|T]) when is_tuple(H) =:= false -> fetch(Cwd, Config, ConfigFile, T);
 fetch(Cwd, Config, ConfigFile, [H|T]) ->
     {Name, Repo} = name_and_repo(H),
+    %io:format("deps fetch ~p:~p",[Name, Repo]),
     case get(Name) of
         fetched -> ok;
         _ ->
@@ -62,9 +63,18 @@ fetch_dep(Cwd, Config, ConfigFile, Name, Cmd, Uri, Co, Cache) ->
     put(Name, fetched),
 
     %% check dependencies of the dependency
-    TrunkConfigFile = filename:join(TrunkPath, ConfigFile),
+    TrunkConfigFile = filename:join(TrunkPath, ConfigFile),        
     Conf = mad_utils:consult(TrunkConfigFile),
     Conf1 = mad_utils:script(TrunkConfigFile, Conf, Name),
+
+    case Name of
+        "gproc" ->
+            io:format("dep-of-dep ~p:~p~n",[Name, Conf]),
+            io:format("dep-of-dep ~p~n",[mad_utils:get_value(deps, Conf, [])]),
+            io:format("dep-of-dep ~p~n",[mad_utils:get_value(deps, Conf1, [])]);
+        _ -> skip
+    end,
+
     fetch(Cwd, Config, ConfigFile, mad_utils:get_value(deps, Conf1, [])),
     case Cache of
        deps_fetch -> skip;

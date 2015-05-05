@@ -23,6 +23,7 @@ main(Params) ->
 bool(false) -> 0;
 bool(_) -> 1.
 
+
 %% fetch dependencies
 deps(Cwd, ConfigFile, Conf, Params) ->
     io:format("Deps Params: ~p~n",[Params]),
@@ -40,12 +41,14 @@ deps(Cwd, ConfigFile, Conf, Params) ->
 
 %% compile dependencies and the app
 compile(Cwd, ConfigFile, Conf, Params) ->
-    %io:format("Compile Params: ~p~n\r",[Params]),
-    case Params of
-         [] -> mad_compile:'compile-deps'(Cwd, ConfigFile, Conf);
-         __ -> [ mad_compile:dep(Cwd, Conf, ConfigFile, Name) || Name <- Params ]
+    io:format("Compile Params: ~p~n\r",[Params]),
+    Res = case Params of
+              [] -> mad_compile:'compile-deps'(Cwd, ConfigFile, Conf);
+              __ -> mad_compile:deps(Cwd, Conf, ConfigFile, Params)
     end,    
-    mad_compile:'compile-apps'(Cwd, ConfigFile, Conf), false.
+    case Res of
+        true -> true;
+        false -> mad_compile:'compile-apps'(Cwd, ConfigFile, Conf) end.
 
 %% reltool apps resolving
 plan(_Cwd,_ConfigFileName,_Config,Params) ->
@@ -131,7 +134,7 @@ print_str(File) ->
                  end || P <- R, is_tuple(P)]
     end.
              
-naga(Cwd,_ConfigFileName,Config,["create" | _]=Params)->
+naga(_Cwd,_ConfigFileName,_Config,["create" | _]=Params)->
     %io:format("Create Naga App Params: ~p~n",[Params]),
     mad_tpl:app(Params), false;
     
@@ -149,7 +152,7 @@ help() ->
     io:format("    params := [] | run params ~n"),
     io:format("       run := command [ options ]~n"),
     io:format("   command := app | lib | deps | up | compile | release | bundle~n"),
-    io:format("              clean | start | stop | attach | repl | dtl | naga~n"),
+    io:format("              clean | start | stop | attach | repl | dtl | naga | lock-deps ~n"),
     mad_naga:help(),
     return(0).
 
