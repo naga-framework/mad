@@ -30,7 +30,7 @@
 
 %% http://userprimary.net/posts/2013/12/26/rebar-plugin-for-locking-deps
 %% https://github.com/seth/rebar_lock_deps_plugin
-
+%% modified for mad by chan sisowath <chan.sisowath@gmail.com>
 -module(mad_lock).
 -author("Seth Falcon <seth@userprimary.net>").
 -author("Yuri Lukyanov <y.snaky@gmail.com>").
@@ -53,8 +53,11 @@
 -compile([export_all]).
 -endif.
 
-'lock-deps'(Config, _AppFile) ->
-    run_on_base_dir(Config, fun lock_deps/1).
+%% 'lock-deps'(Config, _AppFile) ->
+%%     run_on_base_dir(Config, fun lock_deps/1).
+'lock-deps'(Config, Params) ->
+    lock_deps(Config, Params).
+    %%run_on_base_dir(Config, fun lock_deps/2).
 
 'update-deps-local'(Config, _AppFile) ->
     run_on_base_dir(Config, fun update_deps_local/1).
@@ -88,15 +91,31 @@ run_on_base_dir(Config, Fun) ->
     end.
 
 lock_deps(Config) ->
-    DepsDir = rebar_config:get(Config, deps_dir, "deps"),
+    DepsDir = mad_utils:get_value(deps_dir, Config, ["deps"]),
+    %%SubDeps = case mad_utils:sub_dirs(Dir, "rebar.config", Config) of
+    %%DepsDir = rebar_config:get(Config, deps_dir, "deps"),
     Ignores = string:tokens(rebar_config:get_global(Config, ignore, ""), ","),
     DepDirs = ordered_deps(Config, DepsDir),
-    SubDirs = rebar_config:get(Config, sub_dirs, []),
+    %%SubDirs = rebar_config:get(Config, sub_dirs, []),
+    SubDirs = mad_utils:sub_dirs(DepsDir, "rebar.config", Config),
     DepVersions = get_dep_versions(DepDirs),
     AllDeps = collect_deps(["."|DepDirs++SubDirs]),
     NewDeps = get_locked_deps(DepVersions, AllDeps, Ignores),
     NewConfig = rebar_config:get_global(Config,
         lock_config, "./rebar.config.lock"),
+    write_rebar_lock("./rebar.config", NewConfig, NewDeps),
+    io:format("wrote locked rebar config to: ~s~n", [NewConfig]),
+    ok.
+
+lock_deps(Config, Params) ->
+    DepsDir = mad_utils:get_value(deps_dir, Config, ["deps"]),
+    Ignores = [], %%string:tokens(rebar_config:get_global(Config, ignore, ""), ","),
+    DepDirs = ordered_deps(Config, DepsDir),
+    SubDirs = mad_utils:sub_dirs(DepsDir, "rebar.config", Config),
+    DepVersions = get_dep_versions(DepDirs),
+    AllDeps = collect_deps(["."|DepDirs++SubDirs]),
+    NewDeps = get_locked_deps(DepVersions, AllDeps, Ignores),
+    NewConfig = "./rebar.config.lock",
     write_rebar_lock("./rebar.config", NewConfig, NewDeps),
     io:format("wrote locked rebar config to: ~s~n", [NewConfig]),
     ok.

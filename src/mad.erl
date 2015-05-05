@@ -7,7 +7,7 @@
 main([]) -> help();
 main(Params) ->
     {Other,FP} = mad_utils:fold_params(Params),
-    %io:format("Params: ~p~n\r",[FP]),
+    io:format("Params: ~p~n\r",[FP]),
     case Other == [] of
          true -> skip;
          false -> io:format("Unknown Command or Parameter ~p~n\r",[Other]), help() end,
@@ -105,6 +105,10 @@ release(_Cwd,_ConfigFileName,_Config,Params) ->
 static(_Cwd,_ConfigFileName,Config,Params) ->
     io:format("Compile Static Params: ~p~n",[Params]),
     mad_static:main(Config, Params).
+
+lock_deps(_Cwd,_ConfigFileName,Config,Params) ->
+    io:format("Compile Lock-deps Params: ~p~n",[Params]),
+    mad_lock:'lock-deps'(Config, Params).
 
 dtl(_Cwd,_ConfigFileName,_Config,["strings", Path]) ->
     %%FIXME: find erlydtl from config

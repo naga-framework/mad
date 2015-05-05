@@ -94,6 +94,7 @@ atomize("lin"++_) -> ling;
 atomize("rel"++_) -> release;
 atomize("dtl") -> dtl;
 atomize("naga") -> naga;
+atomize("lock"++_) -> lock_deps;
 atomize(Else) -> Else.
 
 atomize_params_commands(Params) -> atomize_params_commands(Params,[]).
