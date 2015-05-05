@@ -1,4 +1,3 @@
-default: escript
-escript:
-	./mad dep com bun mad
-.PHONY: escript
+default:
+	echo "-define(VERSION,\"`git rev-parse HEAD | head -c 6`\")." > include/mad.hrl
+	./mad cle dep com bun mad

@@ -78,17 +78,12 @@ dep(Cwd, _Conf, ConfigFileName, Name, Path) ->
             false %%FIXME
     end.
 
-%compile_fun(Inc,Bin,Opt,Deps) -> fun(File) -> (module(filetype(File))):compile(File,Inc,Bin,Opt,Deps) end.
-compile_files([],_Inc,_Bin,_Opt,_Deps) -> false; %% succeed 
+compile_files([],_Inc,_Bin,_Opt,_Deps) -> false;
 compile_files([File|Files],Inc,Bin,Opt,Deps) ->
     case (module(filetype(File))):compile(File,Inc,Bin,Opt,Deps) of
-         true -> 
-            io:format("File didn't COMPILE ~p~n",[File]),
-            true;
-         ok -> 
-            io:format("@@@ ~p:~p~n",[module(filetype(File)), File]),
-            false;            
-         false -> compile_files(Files,Inc,Bin,Opt,Deps) end.
+         true -> true;
+         false -> compile_files(Files,Inc,Bin,Opt,Deps);
+         _ -> io:format("Error: ~p~n",[{File}]) end.
 
 module("erl") -> mad_erl;
 module("lfe") -> mad_lfe;
@@ -104,7 +99,7 @@ is_compiled(BeamFile, File) -> mad_utils:last_modified(BeamFile) >= mad_utils:la
 
 'compile-apps'(Cwd, ConfigFile, Conf) ->
     Dirs = mad_utils:sub_dirs(Cwd, ConfigFile, Conf),
-    io:format("Compile Apps: ~p~n",[Dirs]),
+    %io:format("Compile Apps: ~p~n",[Dirs]),
     case Dirs of
         [] -> mad_compile:dep(Cwd, Conf, ConfigFile, Cwd);
         Apps -> mad_compile:deps(Cwd, Conf, ConfigFile, Apps) end.
