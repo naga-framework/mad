@@ -41,4 +41,3 @@ compile_static(Files) ->
     case Res of
         {_,0,_} -> false;
         {_,_,_} -> io:format("error while compiling assets~n"), true end.
-    end.
