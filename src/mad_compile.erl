@@ -3,9 +3,13 @@
 -compile(export_all).
 
 %% compile dependencies
-
 deps(_, _, _, []) -> false;
 deps(Cwd, Conf, ConfigFile, [{Name,Path}|T]) ->
+    deps2(Cwd, Conf, ConfigFile, [{Name,Path}|T]);
+deps(Cwd, Conf, ConfigFile, [H|T]) ->
+    {Name, Path} = mad_deps:name_and_repo(H),
+    deps2(Cwd, Conf, ConfigFile, [{Name,Path}|T]).
+deps2(Cwd, Conf, ConfigFile, [{Name,Path}|T]) ->
     Res = case get(Name) == compiled andalso get(mode) /= active  of
               true -> false;
               false -> dep(Cwd, Conf, ConfigFile, Name, Path) end,
@@ -16,7 +20,6 @@ deps(Cwd, Conf, ConfigFile, [{Name,Path}|T]) ->
 %% compile a dependency
 dep(Cwd, Conf, ConfigFile, "/"++ _ = Name) ->
     dep(Cwd, Conf, ConfigFile, filename:basename(Name), Cwd).
-%%FIXME
 dep(_Cwd, _Conf, _ConfigFile, "merl"=Name, DepPath) -> 
     EbinDir = mad_utils:ebin(DepPath),    
     code:replace_path(Name,EbinDir),
