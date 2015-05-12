@@ -28,13 +28,23 @@ dep(_Cwd, _Conf, _ConfigFile, "merl"=Name, DepPath) ->
 dep(Cwd, _Conf, ConfigFileName, Name, Path) ->
     ConfigFile = filename:join(Path, ConfigFileName),
     Conf = mad_utils:consult(ConfigFile),
+    Conf1 = mad_script:script(ConfigFile, Conf, Name),
 
     io:format("==> ~p~n\r",[Name]),
 
-    Conf1 = mad_script:script(ConfigFile, Conf, Name),
+    DepsDir = mad_utils:get_value(deps_dir, Conf1, "deps"),
     Deps = mad_utils:get_value(deps, Conf1, []),
     SrcDir = filename:join([mad_utils:src(Path)]),
     mad_hooks:apply_hooks(pre_hooks, Conf, Cwd, Path),
+
+    IncDir = mad_utils:include(Path),
+    EbinDir = mad_utils:ebin(Path),
+    LibDirs = mad_utils:get_value(lib_dirs, Conf1, []),
+    %% io:format("DepPath ~p~n Includes: ~p~nLibDirs: ~p~n",[DepPath,Includes,LibDirs]),
+    %% create EbinDir and add it to code path
+
+    file:make_dir(EbinDir),
+    code:replace_path(Name,EbinDir),
 
     case mad_naga:is_naga(Name, Conf) of false ->
     Files = files(SrcDir,".yrl") ++ 
@@ -46,39 +56,36 @@ dep(Cwd, _Conf, ConfigFileName, Name, Path) ->
     case Files of
         [] -> false;
         Files ->
-            IncDir = mad_utils:include(Path),
-            EbinDir = mad_utils:ebin(Path),
-            LibDirs = mad_utils:get_value(lib_dirs, Conf, []),
             Includes = lists:flatten([
-               [{i,filename:join([filename:dirname(Path),D,include])} 
-                || D<-mad_utils:raw_deps(Deps) ] %% for -include
-            ++ [{i,filename:dirname(Path)}] ]
-            ++ [{i,filename:join([Cwd,L])} || L <- LibDirs ]), % for -include_lib
-            %io:format("DepPath ~p~n Includes: ~p~nLibDirs: ~p~n",[DepPath,Includes,LibDirs]),
-            %% create EbinDir and add it to code path
-            file:make_dir(EbinDir),
-            code:replace_path(Name,EbinDir),
-
+                              [{i,filename:join([Cwd,DepsDir,D,include])} 
+                              || D<-mad_utils:raw_deps(Deps) ] %% for -include
+                              ++ [{i,filename:dirname(Path)}] ]
+                              ++ [{i,filename:join([Cwd,L])} || L <- LibDirs ]), % for -include_lib
+            %io:format("Compile Includes ~p~n",[Includes]), 
             %erlc(DepPath), % comment this to build with files/2
-
             Opts = mad_utils:get_value(erl_opts, Conf1, []),
             FilesStatus = compile_files(sorted_files(Files),IncDir, EbinDir, Opts, Includes),
             DTLStatus = mad_dtl:compile(Path,Conf1),
             PortStatus = lists:any(fun(X)->X end,mad_port:compile(Path,Conf1)),
             %% io:format("DTL Status: ~p~n",[DTLStatus]),
             %% io:format("Port Status: ~p~n",[PortStatus]),
-            %% io:format("Files Status: ~p~n",[FilesStatus]),
-            put(Name, compiled),
-            FilesStatus orelse DTLStatus orelse PortStatus
+            %% io:format("Files Status: ~p~n",[FilesStatus]),            
+            case FilesStatus orelse DTLStatus orelse PortStatus of
+                true -> true; false -> put(Name, compiled), false end
     end;
         true ->
-            EbinDir = mad_utils:ebin(Path),
-            file:make_dir(EbinDir),
-            code:replace_path(Name,EbinDir),
+            Includes = lists:flatten([
+                              [{i,filename:join([Cwd,DepsDir,D,include])} 
+                              || D<-mad_utils:raw_deps(Deps) ] %% for -include
+                              ++ [{i,filename:join([Cwd, DepsDir])}] ]
+                              ++ [{i,Path}]
+                              ++ [{i,filename:join([Cwd,L])} || L <- LibDirs ]
+                                    ), % for -include_lib
             mad_dtl:compile(Path,Conf1),
-            mad_naga:compile(Path,Conf1),
-            put(Name, compiled),
-            false %%FIXME
+            case mad_naga:compile(Path, IncDir, EbinDir, Conf1, Includes) of 
+                false -> put(Name, compiled), false;
+                _ -> true
+            end
     end.
 
 compile_files([],_Inc,_Bin,_Opt,_Deps) -> false;
@@ -102,7 +109,7 @@ is_compiled(BeamFile, File) -> mad_utils:last_modified(BeamFile) >= mad_utils:la
 
 'compile-apps'(Cwd, ConfigFile, Conf) ->
     Dirs = mad_utils:sub_dirs(Cwd, ConfigFile, Conf),
-    %io:format("Compile Apps: ~p~n",[Dirs]),
+    io:format("Compile Apps: ~p~n",[Dirs]),
     case Dirs of
            [] -> mad_compile:dep(Cwd,  Conf, ConfigFile, Cwd);
          Apps -> mad_compile:dep(Cwd,  Conf, ConfigFile, Cwd),

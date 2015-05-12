@@ -1,8 +1,8 @@
 -module(mad_naga).
--copyright('chanrotha sisowath').
+-copyright('chan sisowath').
 -compile(export_all).
 
--define(COMPILE_OPTS(Inc, Ebin, Opts), [report, {i, Inc}, {outdir, Ebin}] ++ Opts).
+-define(COMPILE_OPTS(Inc, Ebin, Opts, Deps), [report, {i, [Inc]}, {outdir, Ebin}] ++ Opts ++ Deps).
 
 help() ->
     io:format("              dtl strings <path/to/tpl>~n"),
@@ -12,10 +12,7 @@ help() ->
 
 naga_default_opts() ->
     [
-     {req_ctrl,          pmod} %pmod|none, pmod => naga_req:new(Req) when Req == cowboy_req.
-    ,{req_ws,            pmod} %pmod|none  none => cowboy_req
-    ,{req_rest,          none} %none
-    ,{model_manager,     none} %none | boss | ecto
+     {model_manager,     none} %none | boss
     ,{controller_manager,none} %erl|lfe|pmod|boss 
     ,{session_manager,   none} %naga_session
     ,{i18n_manager,      none} %naga_i18n
@@ -54,111 +51,62 @@ naga_default_opts() ->
     ,{view_htmltags_dir, "src/view/lib/tag_html"}
     ,{custom_tags,       "priv/custom_tags"}
 
-    %% ,{compiler_options,  []}
-    %% ,{cljs_dir,          "src/cljs"}
-    %% ,{cljs_outdir,       "priv/static/cljs"}
-    %% ,{cljs_extension,    [".cljs"]}
-    %% ,{less_dir,          "priv/less/src"}
-    %% ,{less_outdir,       "priv/static/css"}
-    %% ,{less_extension,    [".less"]}
-    %% ,{src,               [lib, view_tag_helper, view_filter_helper, mail, websocket, n2o_dtl,
-    %%                       view_html_tags, view, mail_view, controller, model, rest, n2o, src]}
+    ,{src,               [lib, model, view_tag_helper, view_filter_helper, mail, websocket, n2o_dtl,
+                           view_html_tags, view, mail_view, controller, rest, n2o, src]}
     ].
-
-compile(Path, Config) ->
-    %io:format("naga compile ~p, ~p~n",[Path, Config]),
-    compile(Path, Config, is_naga(Path, Config)).
 
 %% --------------------------------------------------------------------------------------
 %% compile NAGA App
 %% --------------------------------------------------------------------------------------
-compile(Path, Config, true) ->
+compile(Cwd, Inc, Bin, Config, Deps) ->
     {{_, NagaOpts}, C1} = get_kv(naga_opts, Config, []),
     {{_,ErlOpts}, _} = get_kv(erl_opts, C1, []),
     case lists:keydelete(name, 1, NagaOpts) of
-        [] -> compile_naga(Path,naga_default_opts()++[{erl_opts, ErlOpts}]);           
-        X -> compile_naga(Path,overide(naga_default_opts(),X)++[{erl_opts, ErlOpts}]) 
-    end;
-
-%% --------------------------------------------------------------------------------------
-%% compile Other
-%% --------------------------------------------------------------------------------------
-compile(Path, Config, false) ->
-    case filelib:is_file(Path) of
-        true ->
-            Extension = filename:extension(Path),
-            {Bin, Inc} = case filename:split(Path) of
-                             ["..", App, "src"|_] -> 
-                                 {filename:join(["..",App, "ebin"]),
-                                  filename:join(["..",App, "include"])};
-                             ["..", App, "priv"|_] -> 
-                                 {filename:join(["..",App, "ebin"]),
-                                  filename:join(["..",App, "include"])};
-                             ["deps", App, "src"|_] -> 
-                                 {filename:join(["deps",App, "ebin"]),
-                                  filename:join(["deps",App, "include"])};
-                             ["apps", App, "src"|_] -> 
-                                 {filename:join(["apps",App, "ebin"]),
-                                  filename:join(["apps",App, "include"])};
-                             ["src"|_] -> 
-                                 {"./ebin", "./include" }
-                             
-                         end,
-            %%io:format("Bin ~p, Inc ~p~n, Ext ~p",[Bin, Inc, Extension]),
-            case Extension of
-                ".erl" -> compile_erl(Path, Config, Bin, Inc);
-                ".lfe" -> compile_lfe(Path, Config, Bin);
-                _ -> skip
-            end;                            
-        false ->
-            case filelib:is_dir(Path) of true ->
-                    mad:main(["compile", Path]);
-                false -> skip
-            end
+        [] -> compile_naga(Cwd, Inc, Bin, naga_default_opts()++[{erl_opts, ErlOpts}], Deps);           
+        X -> compile_naga(Cwd, Inc, Bin, overide(naga_default_opts(),X)++[{erl_opts, ErlOpts}], Deps) 
     end.
+
 
 %% --------------------------------------------------------------------------------------
 %% compile NAGA App
 %% --------------------------------------------------------------------------------------
-compile_naga(Path, Opts0) ->    
+compile_naga(Path, Inc, Bin, Opts0, Deps) ->    
     case filelib:is_dir(Path) of
         true ->
-            %%code:replace_path(o2o_sale, "../o2o_sale/ebin"),            
             Opts = [{root_dir, Path}|Opts0],
-            code:replace_path(list_to_atom(app_name(Path)), out_dir(Opts)),            
-            
+            code:replace_path(list_to_atom(app_name(Path)), out_dir(Opts)),                        
+
             SrcDir = dir(src_dir, Opts),
             InitDir = dir(init_dir, Opts),
             SrcExtensions = proplists:get_value(src_extension, Opts, []),
             Extensions = SrcExtensions ++ proplists:get_value(tpl_extension, Opts) ++
                 proplists:get_value(mail_tpl_extension, Opts),
             Exts = lists:usort(Extensions),
-            Files = files_list(SrcDir, Exts, []) ++ files_list(InitDir, SrcExtensions, []),
-            {ok, Cwd} = file:get_cwd(),
-            
-            Files1 = [begin
+            Files0 = files_list(SrcDir, Exts, []) ++ files_list(InitDir, SrcExtensions, []),
+            {ok, Cwd} = file:get_cwd(),                        
+            Files = [begin
                          Temp = (X -- Cwd) -- "/",
                           case Path of
                               "/" ++ _ -> 
-                                  AppName = filename:basename(Path),
-                                  filename:join(["..", AppName, Temp]);
+                                  case filename:split(Temp) of
+                                      ["deps", Name | _] ->
+                                          Temp;
+                                      _ ->
+                                          AppName = filename:basename(Path),
+                                          filename:join(["..", AppName, Temp])
+                                  end;
                               _ -> Temp
                           end
-                      end || X <- Files],
-            Result = lists:map(fun(X) ->
-                                       {App, T} = t(X), H = h(T),
-                                       %io:format("~p, ~p, ~p, ~p~n",[App, T, H, X ]),
-                                       case T of 
-                                           view -> ?MODULE:H(App, X, Opts);
-                                           _    -> ?MODULE:H(X, Opts)
-                                       end
-                               end,
-                               Files1 
-                              ),
-            emit_app_src(Result, Path, Opts),
-            ok;
+                      end || X <- Files0],
+            case compile_files(Files, Inc, Bin, Opts, Deps, []) of
+                {false, Modules} -> 
+                    emit_app_src(Modules, Path, Opts), 
+                    false;
+                Err -> 
+                    true
+            end;
         false -> 
-            {Path1, Opts2} = case root_dir(Path) of
+            {File, Opts2} = case root_dir(Path) of
                                  "/" -> 
                                      {ok, Cwd} = file:get_cwd(),                                     
                                      Temp = (Path -- Cwd) -- "/",
@@ -171,31 +119,42 @@ compile_naga(Path, Opts0) ->
                                      Opts1 = [{root_dir, root_dir(Path)}|Opts0],
                                      {Path, Opts1}
                              end,
-            {App, T} = t(Path1),
-            H = h(T),
-            %io:format("~p, ~p, ~p~n",[App, T, H]),
-            case T of 
-                view -> ?MODULE:H(App, Path1, Opts2);
-                _    -> ?MODULE:H(Path, Opts2) end
+            case compile_files([File], Inc, Bin, Opts2, Deps, []) of
+                {false, _} -> false;
+                _ -> true
+            end
     end.
 
 skip(_File, _Opts) -> [].
+
+compile_files([], _Inc, _Bin, _Opts, _Deps, Acc) -> {false, Acc};
+compile_files([File|Files], Inc, Bin, Opts, Deps, Acc) ->
+    {App, Type} = t(File),
+    CompileFun = h(Type),
+    Res = case Type of
+              view -> ?MODULE:CompileFun(App, File, Inc, Bin, Opts, Deps);
+              _ -> ?MODULE:CompileFun(File, Inc, Bin, Opts, Deps)
+          end,
+    io:format("Compiling ~p ~s~n", [Type, File]),
+    case Res of
+        {ok, Module} -> compile_files(Files, Inc, Bin, Opts, Deps, [Module|Acc]);
+        Err ->
+            io:format("~p~n",[Err]),
+            {true, Acc}
+    end.
+
 %% --------------------------------------------------------------------------------------
 %%  compile erlang
 %% --------------------------------------------------------------------------------------
-compile_erl(File, Opts) ->
-    Bin = dir(ebin_dir, Opts),
-    Inc = dir(include_dir, Opts),
-    compile_erl(File, Opts, Bin, Inc).
-
-compile_erl(File, Opts, Bin, Inc) ->
-    %io:format("Bin ~p, Inc ~p~n",[Bin, Inc]),
+compile_erl(File, Inc,  Bin, Opts, Deps) ->
     Opt0 = proplists:get_value(erl_opts, Opts, []),
     BeamFile = erl_to_beam(Bin, File),
     Compiled = mad_compile:is_compiled(BeamFile, File),
     Module = list_to_atom(filename:rootname(filename:basename(BeamFile))),
+    %% io:format("Bin ~p~n, Inc ~p~n, Deps ~p~n, Module ~p~n, Opts ~p~n",
+    %%           [Bin, Inc, Deps, Module, Opt0]),
     if  Compiled =:= false ->
-        Opts1 = ?COMPILE_OPTS(Inc, Bin, [verbose] ++ Opt0),
+        Opts1 = ?COMPILE_OPTS(Inc, Bin, [verbose] ++ Opt0, Deps),
         case compile:file(File, Opts1) of
             ok -> {ok, Module};
             Err -> Err end;
@@ -206,95 +165,58 @@ compile_erl(File, Opts, Bin, Inc) ->
 %%  compile lfe
 %% --------------------------------------------------------------------------------------
 
-compile_lfe(File, Opts, OutDir) ->
+compile_lfe(File, Inc, Bin, Opts, Deps) ->
     CompilerOptions = [verbose, return, binary, {parse_transform, pmod_pt}] ++ 
         proplists:get_value(erl_opts, Opts, []),
     case lfe_comp:file(File, CompilerOptions) of
         {ok, Module, Binary, _Warnings} ->
-            OutFile = filename:join([OutDir, filename:basename(File, ".lfe") ++ ".beam"]),
+            OutFile = filename:join([Bin, filename:basename(File, ".lfe") ++ ".beam"]),
             file:write_file(OutFile, Binary),            
             {ok, Module};
         Other -> Other end.
 
-%% --------------------------------------------------------------------------------------
-%%  compile elexir
-%% --------------------------------------------------------------------------------------
-compile_elixir(FilePath, Options) ->
-    [{Module, Binary}] = elixir_compiler:file(list_to_binary(FilePath)),
-    OutDir = proplists:get_value(out_dir, Options),
-    BeamFile	= filename:join([OutDir, atom_to_list(Module) ++ ".beam"]),
-    WriteResult = file:write_file(BeamFile, Binary),
-    handle_write_result(Module, BeamFile, WriteResult).
-handle_write_result(Module, _BeamFile, ok) ->
-    {ok, Module};
-handle_write_result(_Module, BeamFile, {error, Reason}) ->
-    {error, lists:flatten(
-              io_lib:format("Beam generation of '~s' failed: ~p",
-                            [BeamFile, file:format_error(Reason)]))}.
-    
+   
 %% --------------------------------------------------------------------------------------
 %%  compile model
 %% --------------------------------------------------------------------------------------
-compile_model(File, Opts) ->
-    compile_model(proplists:get_value(model_manager,Opts), File, Opts).
-compile_model(none, File, Opts) -> 
-    compile_model_none(filename:extension(File), File, Opts);
-compile_model(boss, File, Opts) ->
+compile_model(File, Inc, Bin, Opts, Deps) ->
+    compile_model(proplists:get_value(model_manager,Opts), File, Inc, Bin, Opts, Deps).
+compile_model(none, File, Inc, Bin, Opts, Deps) -> 
+    compile_model_none(filename:extension(File), File, Inc, Bin, Opts, Deps);
+compile_model(boss, File, Inc, Bin, Opts, Deps) ->
     Compiler = boss_record_compiler,
     ErlOpts = proplists:get_value(erl_opts, Opts, []),
-    OutDir = out_dir(Opts),
     Opts1 = [debug_info,
              {pre_revert_transform, fun Compiler:trick_out_forms/2},
              {token_transform,      fun Compiler:process_tokens/1}
-             , ErlOpts, {out_dir, OutDir}] ,
+             , {i, Inc}, ErlOpts ++ Deps, {out_dir, Bin}] ,
     Compiler:compile(File, Opts1);
 
-%%FIXME: test ecto model
-compile_model(ecto, File, Opts) ->
-    Files = [list_to_binary(File)],
-    OutDir = proplists:get_value(out_dir, Opts),
-    Result = 'Elixir.Kernel.ParallelCompiler':files_to_path(Files, OutDir),
-    {ok, hd(Result)};
-compile_model(_, File, Opts) -> 
-    compile_model(none, File, Opts).
+compile_model(_, File, Inc, Bin, Opts, Deps) -> 
+    compile_model(none, File, Inc, Bin, Opts, Deps).
 
-compile_model_none(".lfe", File, Opts) -> compile_lfe(File, Opts);
-compile_model_none(".erl", File, Opts) -> compile_erl(File, Opts);
-compile_model_none(".ex", File, Opts) -> compile_elixir(File, Opts);
-compile_model_none( _, _, _) -> skip.
+compile_model_none(".lfe", File, Inc, Bin, Opts, Deps) -> compile_lfe(File, Inc, Bin, Opts, Deps);
+compile_model_none(".erl", File, Inc, Bin, Opts, Deps) -> compile_erl(File, Inc, Bin, Opts, Deps);
+compile_model_none(    _,    _,   _,   _,    _,    _) -> skip.
 
 %% --------------------------------------------------------------------------------------
 %%  compile controller
 %% --------------------------------------------------------------------------------------
-compile_controller(File, Opts) ->
-    compile_controller(filename:extension(File), File, Opts).
+compile_controller(File, Inc, Bin, Opts, Deps) ->
+    compile_controller(filename:extension(File), File, Inc, Bin, Opts, Deps).
 
-compile_controller(".erl", File, Opts) -> 
+compile_controller(".erl", File, Inc, Bin, Opts, Deps) -> 
     case proplists:get_value(controller_manager, Opts) of
         boss -> boss_legacy:compile(File, Opts);
-        _ -> compile_erl(File, Opts) end;
-compile_controller(".ex", File, Opts) -> 
-    compile_elixir(File, Opts);
-compile_controller(".lfe", File, Opts) -> 
-    compile_lfe(File, Opts).
-compile_lfe(File, Opts) ->
-    OutDir = out_dir(Opts),
-    compile_lfe(File, Opts, OutDir).
+        _ -> compile_erl(File, Inc, Bin, Opts, Deps) end;
+compile_controller(".lfe", File, Inc, Bin, Opts, Deps) -> 
+    compile_lfe(File, Inc, Bin, Opts, Deps).
 
 %% --------------------------------------------------------------------------------------
 %%  compile view template
 %% --------------------------------------------------------------------------------------
 
-%% compile_view_dir(File, Opts) ->
-%%     io:format("File ~p~n",[File]),
-%%     io:format("erlydtl options ~p~n",[tpl_opts(Opts)]).
-
-compile_view(File, Opts) ->    
-    Dir = proplists:get_value(root_dir, Opts),
-    AppName = app_name(Dir),
-    compile_view(AppName, Dir, File, Opts).
-
-compile_view(AppName, File, Opts) ->    
+compile_view(AppName, File, _Inc, _Bin, Opts, _Deps) ->    
     Dir = case proplists:get_value(root_dir, Opts) of
               undefined -> case filename:split(File) of
                                ["deps", AppName |_] -> filename:join([".", "deps", AppName]);
@@ -329,55 +251,39 @@ view_module(App, Path) ->
 %% --------------------------------------------------------------------------------------
 %%  compile rest controller
 %% --------------------------------------------------------------------------------------
-compile_rest(File, Opts) ->    
+compile_rest(File, Inc, Bin, Opts, Deps) ->
     Dir = proplists:get_value(root_dir, Opts),
     AppName = app_name(Dir),
-    compile_rest(AppName, Dir, File, Opts).
-
-compile_rest(AppName, File, Opts) ->    
-    %RootDir = proplists:get_value(root_dir, Opts),
-    Dir = case proplists:get_value(root_dir, Opts) of
-              undefined -> case filename:split(File) of
-                               ["deps", AppName |_] -> filename:join([".", "deps", AppName]);
-                               [".","src"|_] -> {ok,Cwd} = file:get_cwd(), Cwd
-                           end;
-              Else -> Else end,
-    compile_rest(AppName, Dir, File, Opts).
-    
-compile_rest(AppName, Dir, File, Opts) ->
     File1 = filename:rootname(File),
     Tokens = case lists:prefix(Dir, File1) of 
                  true  ->filename:split(File1) -- filename:split(Dir);
                  false ->filename:split(File1)
              end,
-    RestModule = rest_module(AppName, Tokens),
-    compile_rest(AppName, Dir, File1, RestModule, Opts).    
-
-compile_rest(_AppName, Dir, File, Module, Opts) ->
-    Bin = dir(ebin_dir, Opts, Dir),
-    Inc = dir(include_dir, Opts, Dir),   
+    Module = rest_module(AppName, Tokens),
     BeamFile = erl_to_beam(Bin, Module),
-    Compiled = mad_compile:is_compiled(BeamFile, File ++ ".erl"),
+
+    Compiled = mad_compile:is_compiled(BeamFile, File),
     case Compiled of
         false ->
             Opts0 = proplists:get_value(erl_opts, Opts),
-            Opts1 = ?COMPILE_OPTS(Inc, Bin, [{module_name, Module}, 
-                                             verbose, return, binary, 
-                                             {parse_transform, ?MODULE}] ++ Opts0),            
+            Opts1 = ?COMPILE_OPTS(Inc, Bin, Opts0 ++ 
+                                      [{module_name, Module}, verbose, 
+                                       return, binary, {parse_transform, ?MODULE}
+                                      ] , Deps),     
             case compile:file(File, Opts1) of
-                {ok, _ModuleName, Binary, _Warning} -> 
+                {ok, _ModuleName, Binary, _Warning} ->                     
                     case file:write_file(BeamFile, Binary) of
-                        ok -> {ok, Module};
+                        ok -> 
+                            {ok, Module};
                         {error, Reason} = Err ->
-                            io:format("error ~p~n", [Reason]),
                             Err
                     end;
                 Err -> 
                     io:format("Error ~p",[Err]),
                     Err end;
-        true -> {ok, Module}
+        true ->
+            {ok, Module}
     end.
-
 
 rest_module(App, Path) ->
     naga_module(App, Path).
@@ -539,7 +445,7 @@ files_dir(Dir, Extensions) ->
         _ -> []
     end.
 
-files_list(_, [], Acc) -> Acc;
+files_list(_, [], Acc) -> lists:reverse(Acc);
 files_list(Root, [Ext|T], Acc) -> 
     Files = filelib:fold_files(Root, Ext, true, 
             fun(F, X) -> case filename:extension(F) == Ext of
@@ -598,8 +504,8 @@ dir(Key, Opts, Dft) ->
     filename:join([Dir,proplists:get_value(Key,Opts)]).
     
 app_name(Dir) -> filename:basename(Dir).
-emit_app_src(Result, Dir, Opts) ->
-    AllModules = [element(2,X) || X<- Result, element(1,X) == ok],
+emit_app_src(Modules, Dir, Opts) ->
+    %AllModules = [element(2,X) || X<- Result, element(1,X) == ok],
     OutDir = out_dir(Opts),
     AppName = app_name(Dir),
     App = list_to_atom(AppName),
@@ -608,14 +514,14 @@ emit_app_src(Result, Dir, Opts) ->
         {error,enoent} -> io:format("error file ~p not found~n",[DotAppSrc]), 
                           skip;        
         {ok, [{application, App, AppData}]} ->
-            AppData1 = lists:keyreplace(modules, 1, AppData, {modules, AllModules}),
+            AppData1 = lists:keyreplace(modules, 1, AppData, {modules, Modules}),
             DefaultEnv = proplists:get_value(env, AppData1, []),
             AppData2 = lists:keyreplace(env, 1, AppData1, {env, DefaultEnv}),
             IOList = io_lib:format("~p.~n", [{application, App, AppData2}]),
             AppFile = filename:join([OutDir, lists:concat([AppName, ".app"])]),
-            %%io:format("~n---- naga app~n~s~n",[IOList]),
+            %io:format("~nFile ~p~n---- naga app~n~s~n",[AppFile, IOList]),
             file:write_file(AppFile, IOList),
-            ok
+            false
     end.
 
     
@@ -697,4 +603,3 @@ overide(Opts,[]) -> Opts;
 overide(L1,[{K,V}|T]) -> overide(lists:keyreplace(K,1, L1, {K,V}),T). 
 
 file_to_beam(Bin, Filename) -> filename:join(Bin, filename:basename(Filename) ++ ".beam").
-
