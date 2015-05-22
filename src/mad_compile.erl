@@ -30,7 +30,8 @@ dep(Cwd, _Conf, ConfigFileName, Name, Path) ->
     Conf = mad_utils:consult(ConfigFile),
     Conf1 = mad_script:script(ConfigFile, Conf, Name),
 
-    io:format("==> ~p~n\r",[Name]),
+    IsNaga = mad_naga:is_naga(Name, Conf1),
+    io:format("==> ~p ~n\r",[Name]),
 
     DepsDir = mad_utils:get_value(deps_dir, Conf1, "deps"),
     Deps = mad_utils:get_value(deps, Conf1, []),
@@ -46,7 +47,7 @@ dep(Cwd, _Conf, ConfigFileName, Name, Path) ->
     file:make_dir(EbinDir),
     code:replace_path(Name,EbinDir),
 
-    case mad_naga:is_naga(Name, Conf) of false ->
+    case IsNaga of false ->
     Files = files(SrcDir,".yrl") ++ 
             files(SrcDir,".xrl") ++ 
             files(SrcDir,".lfe") ++ 
@@ -56,11 +57,7 @@ dep(Cwd, _Conf, ConfigFileName, Name, Path) ->
     case Files of
         [] -> false;
         Files ->
-            Includes = lists:flatten([
-                              [{i,filename:join([Cwd,DepsDir,D,include])} 
-                              || D<-mad_utils:raw_deps(Deps) ] %% for -include
-                              ++ [{i,filename:dirname(Path)}] ]
-                              ++ [{i,filename:join([Cwd,L])} || L <- LibDirs ]), % for -include_lib
+            Includes = includes(false, LibDirs, Cwd, Path, DepsDir, Deps),
             %io:format("Compile Includes ~p~n",[Includes]), 
             %erlc(DepPath), % comment this to build with files/2
             Opts = mad_utils:get_value(erl_opts, Conf1, []),
@@ -74,13 +71,7 @@ dep(Cwd, _Conf, ConfigFileName, Name, Path) ->
                 true -> true; false -> put(Name, compiled), false end
     end;
         true ->
-            Includes = lists:flatten([
-                              [{i,filename:join([Cwd,DepsDir,D,include])} 
-                              || D<-mad_utils:raw_deps(Deps) ] %% for -include
-                              ++ [{i,filename:join([Cwd, DepsDir])}] ]
-                              ++ [{i,Path}]
-                              ++ [{i,filename:join([Cwd,L])} || L <- LibDirs ]
-                                    ), % for -include_lib
+            Includes = includes(true, LibDirs, Cwd, Path, DepsDir, Deps),
             mad_dtl:compile(Path,Conf1),
             case mad_naga:compile(Path, IncDir, EbinDir, Conf1, Includes) of 
                 false -> put(Name, compiled), false;
@@ -88,6 +79,21 @@ dep(Cwd, _Conf, ConfigFileName, Name, Path) ->
             end
     end.
 
+includes(true, LibDirs, Cwd, Path, DepsDir, Deps) ->
+    lists:flatten([
+                   [{i,filename:join([Cwd,DepsDir,D,include])} 
+                    || D<-mad_utils:raw_deps(Deps) ] %% for -include
+                   ++ [{i,filename:join([Cwd, DepsDir])}] ]
+                  ++ [{i,Path}]
+                  ++ [{i,filename:join([Cwd,L])} || L <- LibDirs ]
+                 );
+includes(false, LibDirs, Cwd, Path, DepsDir, Deps) ->
+    lists:flatten([
+                   [{i,filename:join([Cwd,DepsDir,D,include])} 
+                    || D<-mad_utils:raw_deps(Deps) ]
+                   ++ [{i,filename:dirname(Path)}] ]
+                  ++ [{i,filename:join([Cwd,L])} || L <- LibDirs ]).
+     
 compile_files([],_Inc,_Bin,_Opt,_Deps) -> false;
 compile_files([File|Files],Inc,Bin,Opt,Deps) ->
     case (module(filetype(File))):compile(File,Inc,Bin,Opt,Deps) of
@@ -116,7 +122,8 @@ is_compiled(BeamFile, File) -> mad_utils:last_modified(BeamFile) >= mad_utils:la
                  mad_compile:deps(Cwd, Conf, ConfigFile, Apps) end.
 
 'compile-deps'(Cwd, ConfigFile, Conf) ->
-    SortedDeps = mad_lock:ordered_deps(Conf, Cwd),    
+    SortedDeps = mad_lock:ordered_deps(Conf, Cwd),
+    %io:format("Sorted Deps ~p~n",[SortedDeps]),
     mad_compile:deps(Cwd, Conf, ConfigFile, SortedDeps).
 
 list(X) when is_atom(X) -> atom_to_list(X);

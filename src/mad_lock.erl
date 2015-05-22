@@ -185,9 +185,21 @@ sha_for_project(Dir) ->
 
 ordered_deps(Config, Dir) ->
     DepDir = mad_utils:get_value(deps_dir, Config, ["deps"]),
-    AllDeps = read_all_deps(Config, Dir),
+    SubDeps = case mad_utils:sub_dirs(Dir, "rebar.config", Config) of
+                  [] -> [];
+                  Dirs ->
+                      [begin 
+                           Conf1 = mad_utils:consult(X ++ "/rebar.config"),
+                           read_all_deps(Conf1, X)
+                       end || X <- Dirs]
+              end,
+    Tops = lists:concat([proplists:get_value(top, X) || X<-SubDeps]),
+    Deps = read_all_deps(Config, Dir),
+    {top, Top1} = lists:keyfind(top, 1, Deps),
+    AllDeps = lists:keyreplace(top, 1, Deps, {top, Top1 ++ Tops}),
     OrderedDeps = order_deps(AllDeps),
     [ {D, filename:join([Dir,DepDir, D])} || D <- OrderedDeps ].
+
 
 order_deps(AllDeps) ->
     Top = proplists:get_value(top, AllDeps),
@@ -208,7 +220,8 @@ order_deps([Item|Rest], AllDeps, Acc) ->
 read_all_deps(Config, Dir) ->
     %TopDeps = rebar_config:get(Config, deps, []),
     DepConfigFile = filename:join(Dir, "rebar.config"),
-    Conf1 = mad_script:script(DepConfigFile, Config, none),    
+    Conf1 = mad_script:script(DepConfigFile, Config, none),
+    %%io:format(">> Config ~p:~p~n",[DepConfigFile, Conf1]),
     TopDeps = case lists:keyfind(deps, 1, Conf1) of
         {deps, Deps} -> Deps;
         false -> []

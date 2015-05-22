@@ -58,6 +58,42 @@ naga_default_opts() ->
 %% --------------------------------------------------------------------------------------
 %% compile NAGA App
 %% --------------------------------------------------------------------------------------
+compile(Cwd, Inc, Bin, Config, Deps, true) ->
+    compile(Cwd, Inc, Bin, Config, Deps);
+compile(Path, Inc, Bin, Config, Deps, false) ->
+    case filelib:is_file(Path) of
+        true ->
+            Ext = filename:extension(Path),
+            {Bin, Inc} = case filename:split(Path) of
+                             ["..", App, "src"|_] -> 
+                                 {filename:join(["..",App, "ebin"]),
+                                  filename:join(["..",App, "include"])};
+                             ["..", App, "priv"|_] -> 
+                                 {filename:join(["..",App, "ebin"]),
+                                  filename:join(["..",App, "include"])};
+                             ["deps", App, "src"|_] -> 
+                                 {filename:join(["deps",App, "ebin"]),
+                                  filename:join(["deps",App, "include"])};
+                             ["apps", App, "src"|_] -> 
+                                 {filename:join(["apps",App, "ebin"]),
+                                  filename:join(["apps",App, "include"])};
+                             ["src"|_] -> 
+                                 {"./ebin", "./include" }                             
+                         end,
+            %%io:format("Bin ~p, Inc ~p~n, Ext ~p",[Bin, Inc, Extension]),
+            case lists:member(Ext, [".erl", ".lfe"]) of true ->
+            case compile_files([Path], Inc, Bin, Config, Deps, []) of
+                {false, _} -> false;
+                _ -> true
+            end; false -> true end;
+
+        false ->
+            case filelib:is_dir(Path) of true ->
+                    mad:main(["compile", Path]);
+                false -> true
+            end
+    end.
+
 compile(Cwd, Inc, Bin, Config, Deps) ->
     {{_, NagaOpts}, C1} = get_kv(naga_opts, Config, []),
     {{_,ErlOpts}, _} = get_kv(erl_opts, C1, []),
@@ -89,7 +125,7 @@ compile_naga(Path, Inc, Bin, Opts0, Deps) ->
                           case Path of
                               "/" ++ _ -> 
                                   case filename:split(Temp) of
-                                      ["deps", Name | _] ->
+                                      ["deps", _Name | _] ->
                                           Temp;
                                       _ ->
                                           AppName = filename:basename(Path),
@@ -102,7 +138,7 @@ compile_naga(Path, Inc, Bin, Opts0, Deps) ->
                 {false, Modules} -> 
                     emit_app_src(Modules, Path, Opts), 
                     false;
-                Err -> 
+                _ -> 
                     true
             end;
         false -> 
@@ -125,7 +161,6 @@ compile_naga(Path, Inc, Bin, Opts0, Deps) ->
             end
     end.
 
-skip(_File, _Opts) -> [].
 
 compile_files([], _Inc, _Bin, _Opts, _Deps, Acc) -> {false, Acc};
 compile_files([File|Files], Inc, Bin, Opts, Deps, Acc) ->
@@ -143,6 +178,9 @@ compile_files([File|Files], Inc, Bin, Opts, Deps, Acc) ->
             {true, Acc}
     end.
 
+%skip(_File, _Opts) -> [].
+skip(_,_,_,_,_) -> {true, []}.
+     
 %% --------------------------------------------------------------------------------------
 %%  compile erlang
 %% --------------------------------------------------------------------------------------
@@ -166,14 +204,20 @@ compile_erl(File, Inc,  Bin, Opts, Deps) ->
 %% --------------------------------------------------------------------------------------
 
 compile_lfe(File, Inc, Bin, Opts, Deps) ->
-    CompilerOptions = [verbose, return, binary, {parse_transform, pmod_pt}] ++ 
+    Opts0 = [verbose, return, binary, {parse_transform, pmod_pt}] ++ 
         proplists:get_value(erl_opts, Opts, []),
-    case lfe_comp:file(File, CompilerOptions) of
-        {ok, Module, Binary, _Warnings} ->
-            OutFile = filename:join([Bin, filename:basename(File, ".lfe") ++ ".beam"]),
-            file:write_file(OutFile, Binary),            
-            {ok, Module};
-        Other -> Other end.
+    BeamFile = erl_to_beam(Bin, File),
+    Compiled = mad_compile:is_compiled(BeamFile, File),
+    Module = list_to_atom(filename:rootname(filename:basename(BeamFile))),
+    if  Compiled =:= false ->
+            Opts1 = ?COMPILE_OPTS(Inc, Bin, [verbose] ++ Opts0, Deps),            
+            case lfe_comp:file(File, Opts1) of
+                {ok, Module, Binary, _Warnings} ->
+                    OutFile = filename:join([Bin, filename:basename(File, ".lfe") ++ ".beam"]),
+                    file:write_file(OutFile, Binary),            
+                    {ok, Module};
+                Other -> Other end;
+        true ->  {ok, Module} end.
 
    
 %% --------------------------------------------------------------------------------------
