@@ -39,7 +39,7 @@ compile_erlydtl_files(Opts) ->
     {{_, ModuleExt}, Opts3} = get_kv(module_ext, Opts2, ""),
     {{_, OutDir},        _} = get_kv(out_dir,    Opts3, ""),
 
-    Files = filelib:fold_files(DocRoot, SourceExt, true,
+    Files = filelib:fold_files(DocRoot, SourceExt++"$", true,
                                fun(F, Acc) -> [F|Acc] end, []),
     Compile = fun(F) ->
         ModuleName = module_name(F, SourceExt, ModuleExt),
