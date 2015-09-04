@@ -23,8 +23,5 @@ compile_port(Dir,Specs,Config) ->
        {_,Status,Report} = sh:run("cc",string:tokens(Args," "),binary,Dir,Env),
        case Status of
           0 -> false;
-          _ -> io:format("Port Compilation Error: ~p",[Report]), true end
-       %% case Status == 0 of
-       %%    true -> skip;
-       %%    false -> io:format("Port Compilation Error: ~p",[Report]) end
+          _ -> mad:info("Port Compilation Error: ~p",[Report]), true end
       end || {Sys,Out,Files} <- Specs, Sys == System].

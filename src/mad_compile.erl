@@ -41,7 +41,7 @@ dep(Cwd, _Conf, ConfigFileName, Name, Path) ->
     IncDir = mad_utils:include(Path),
     EbinDir = mad_utils:ebin(Path),
     LibDirs = mad_utils:get_value(lib_dirs, Conf1, []),
-    %% io:format("DepPath ~p~n Includes: ~p~nLibDirs: ~p~n",[DepPath,Includes,LibDirs]),
+    %% mad:info("DepPath ~p~n Includes: ~p~nLibDirs: ~p~n",[DepPath,Includes,LibDirs]),
     %% create EbinDir and add it to code path
 
     file:make_dir(EbinDir),
@@ -58,15 +58,15 @@ dep(Cwd, _Conf, ConfigFileName, Name, Path) ->
         [] -> false;
         Files ->
             Includes = includes(false, LibDirs, Cwd, Path, DepsDir, Deps),
-            %io:format("Compile Includes ~p~n",[Includes]), 
+            %mad:info("Compile Includes ~p~n",[Includes]), 
             %erlc(DepPath), % comment this to build with files/2
             Opts = mad_utils:get_value(erl_opts, Conf1, []),
             FilesStatus = compile_files(sorted_files(Files),IncDir, EbinDir, Opts, Includes),
             DTLStatus = mad_dtl:compile(Path,Conf1),
             PortStatus = lists:any(fun(X)->X end,mad_port:compile(Path,Conf1)),
-            %% io:format("DTL Status: ~p~n",[DTLStatus]),
-            %% io:format("Port Status: ~p~n",[PortStatus]),
-            %% io:format("Files Status: ~p~n",[FilesStatus]),            
+            %% mad:info("DTL Status: ~p~n",[DTLStatus]),
+            %% mad:info("Port Status: ~p~n",[PortStatus]),
+            %% mad:info("Files Status: ~p~n",[FilesStatus]),            
             case FilesStatus orelse DTLStatus orelse PortStatus of
                 true -> true; false -> put(Name, compiled), false end
     end;
@@ -99,7 +99,7 @@ compile_files([File|Files],Inc,Bin,Opt,Deps) ->
     case (module(filetype(File))):compile(File,Inc,Bin,Opt,Deps) of
          true -> true;
          false -> compile_files(Files,Inc,Bin,Opt,Deps);
-         _ -> io:format("Error: ~p~n",[{File}]) end.
+         _ -> mad:info("Error: ~p~n",[{File}]) end.
 
 module("erl") -> mad_erl;
 module("lfe") -> mad_lfe;
@@ -115,7 +115,7 @@ is_compiled(BeamFile, File) -> mad_utils:last_modified(BeamFile) >= mad_utils:la
 
 'compile-apps'(Cwd, ConfigFile, Conf) ->
     Dirs = mad_utils:sub_dirs(Cwd, ConfigFile, Conf),
-    io:format("Compile Apps: ~p~n",[Dirs]),
+    mad:info("Compile Apps: ~p~n",[Dirs]),
     case Dirs of
            [] -> mad_compile:dep(Cwd,  Conf, ConfigFile, Cwd);
          Apps -> mad_compile:dep(Cwd,  Conf, ConfigFile, Cwd),
@@ -123,7 +123,7 @@ is_compiled(BeamFile, File) -> mad_utils:last_modified(BeamFile) >= mad_utils:la
 
 'compile-deps'(Cwd, ConfigFile, Conf) ->
     SortedDeps = mad_lock:ordered_deps(Conf, Cwd),
-    %io:format("Sorted Deps ~p~n",[SortedDeps]),
+    %mad:info("Sorted Deps ~p~n",[SortedDeps]),
     mad_compile:deps(Cwd, Conf, ConfigFile, SortedDeps).
 
 list(X) when is_atom(X) -> atom_to_list(X);
@@ -131,12 +131,12 @@ list(X) -> X.
 
 erlc(DepPath) ->
     ErlFiles = filelib:wildcard(DepPath++"/src/**/*.erl"),
-    io:format("Files: ~s~n\r",[[filename:basename(Erl)++" " ||Erl<-ErlFiles]]),
+    mad:info("Files: ~s~n",[[filename:basename(Erl)++" " ||Erl<-ErlFiles]]),
     {_,Status,X} = sh:run("erlc",["-o"++DepPath++"/ebin/","-I"++DepPath++"/include"]++
         ErlFiles,binary,filename:absname("."),[{"ERL_LIBS","apps:deps"}]),
     case Status == 0 of
          true -> skip;
-         false -> io:format("Error: ~s~n\r",[binary_to_list(X)]) end.
+         false -> mad:info("Error: ~s~n\r",[binary_to_list(X)]) end.
 
 
 sorted_files(Files) ->
@@ -209,7 +209,3 @@ edge(File, Mod, Files, Includes) ->
             [{File, Else}|Includes]
     end.
              
-    
-
-
-

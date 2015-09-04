@@ -2,9 +2,9 @@
 -copyright('Sina Samavati').
 -compile(export_all).
 
-pull(_,[])          -> false;
-pull(Config, [F|T]) ->
-    io:format("==> up: ~p~n", [F]),
+pull(_,[])         -> false;
+pull(Config,[F|T]) ->
+    mad:info("==> up: ~p~n", [F]),
     {_,Status,Message} = sh:run(lists:concat(["cd ",F," && git pull && cd -"])),
     case Status of
         0 -> mad_utils:verbose(Config,Message), pull(Config,T);
@@ -50,7 +50,7 @@ fetch_dep(Cwd, Config, ConfigFile, Name, Cmd, Uri, Co, Cache) ->
         deps_fetch -> filename:join([mad_utils:get_value(deps_dir,Config,"deps"),Name]);
         Dir -> filename:join([Dir,get_publisher(Uri),Name]) end,
 
-    io:format("==> dependency: ~p tag: ~p~n\r", [Uri,Co]),
+    mad:info("==> dependency: ~p tag: ~p~n", [Uri,Co]),
 
     Fast = case mad_utils:get_value(fetch_speed,Config,[]) of
                 fast_master -> " --depth=1 ";
@@ -61,26 +61,26 @@ fetch_dep(Cwd, Config, ConfigFile, Name, Cmd, Uri, Co, Cache) ->
         {_,Rev} -> git_clone(Uri,Fast,TrunkPath,Rev);
         Master  -> git_clone(Uri,Fast,TrunkPath,Master) end,
 
-    %io:format("Fetch: ~s~n",[R]),
+    %mad:info("Fetch: ~s~n",[R]),
 
     FetchStatus = case filelib:is_dir(TrunkPath) of
                       true -> {skip,0,list_to_binary("Directory "++TrunkPath++" exists.")};
                       false -> sh:run(lists:concat(R)) end,
     
     case FetchStatus of
-        {_,0,_} -> put(Name, fetched),
-                   
-                   %% check dependencies of the dependency
-                   TrunkConfigFile = filename:join(TrunkPath, ConfigFile),
-                   Conf = mad_utils:consult(TrunkConfigFile),
-                   Conf1 = mad_utils:script(TrunkConfigFile, Conf, Name),
-                   fetch(Cwd, Config, ConfigFile, mad_utils:get_value(deps, Conf1, [])),
-                   case Cache of
-                       deps_fetch -> false;
-                       CacheDir -> build_dep(Cwd, Config, ConfigFile,
-                                             get_publisher(Uri), Name, Cmd, Co1, CacheDir)
-                   end;
-    {_,_,FetchError} -> io:format("Fetch Error: ~s~n",[binary_to_list(FetchError)]), true end.
+      {_,0,_} -> put(Name, fetched),
+                 
+                 %% check dependencies of the dependency
+                 TrunkConfigFile = filename:join(TrunkPath, ConfigFile),
+                 Conf = mad_utils:consult(TrunkConfigFile),
+                 Conf1 = mad_utils:script(TrunkConfigFile, Conf, Name),
+                 fetch(Cwd, Config, ConfigFile, mad_utils:get_value(deps, Conf1, [])),
+                 case Cache of
+                     deps_fetch -> false;
+                     CacheDir -> build_dep(Cwd, Config, ConfigFile,
+                                           get_publisher(Uri), Name, Cmd, Co1, CacheDir)
+                 end;
+      {_,_,FetchError} -> mad:info("Fetch Error: ~s~n",[binary_to_list(FetchError)]), true end.
 
 %% build dependency based on branch/tag/commit
 build_dep(Cwd, Conf, _ConfFile, Publisher, Name, _Cmd, _Co, Dir) ->
