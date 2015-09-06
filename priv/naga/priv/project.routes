@@ -1,3 +1,6 @@
 % Routes file.
-{404, [{application, naga},{controller, "indexof"}]}.
+{404, [{application, naga},{controller, "indexof"},{action, [{static, true}]}]}.
+{"/$c", [{application, naga},{controller, "indexof"},{action, "controller"}]}.
+{"/$v", [{application, naga},{controller, "indexof"},{action, "view"}]}.
+
 {"/", [{application, {{appid}} },{controller, "index"},{action, "index"}]}.
