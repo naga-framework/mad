@@ -40,7 +40,7 @@ dep(Cwd, _Conf, ConfigFileName, Name, Path) ->
 
     IncDir = mad_utils:include(Path),
     EbinDir = mad_utils:ebin(Path),
-    LibDirs = mad_utils:get_value(lib_dirs, Conf1, []),
+    LibDirs = mad_utils:get_value(lib_dirs, _Conf, []),
     %% mad:info("DepPath ~p~n Includes: ~p~nLibDirs: ~p~n",[DepPath,Includes,LibDirs]),
     %% create EbinDir and add it to code path
 
@@ -58,6 +58,7 @@ dep(Cwd, _Conf, ConfigFileName, Name, Path) ->
         [] -> false;
         Files ->
             Includes = includes(false, LibDirs, Cwd, Path, DepsDir, Deps),
+            %mad:info("Compile LibDirs ~p~n",[LibDirs]), 
             %mad:info("Compile Includes ~p~n",[Includes]), 
             %erlc(DepPath), % comment this to build with files/2
             Opts = mad_utils:get_value(erl_opts, Conf1, []),
