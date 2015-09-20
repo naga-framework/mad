@@ -116,7 +116,8 @@ is_compiled(BeamFile, File) -> mad_utils:last_modified(BeamFile) >= mad_utils:la
 
 'compile-apps'(Cwd, ConfigFile, Conf) ->
     Dirs = mad_utils:sub_dirs(Cwd, ConfigFile, Conf),
-    mad:info("Compile Apps: ~p~n",[Dirs]),
+    %mad:info("Compile Apps: ~p~n",[Dirs]),
+    [put(D,0)||D<-Dirs],
     case Dirs of
            [] -> mad_compile:dep(Cwd,  Conf, ConfigFile, Cwd);
          Apps -> mad_compile:dep(Cwd,  Conf, ConfigFile, Cwd),
