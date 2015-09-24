@@ -1,6 +1,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 -define(VERSION,"3c9f9c").
 =======
 -define(VERSION,"de49b2").
@@ -11,3 +12,6 @@
 =======
 -define(VERSION,"9adf7e").
 >>>>>>> 5d79168... mad 2.9
+=======
+-define(VERSION,"5d7916").
+>>>>>>> 6208a05... publisher
