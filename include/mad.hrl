@@ -2,6 +2,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 -define(VERSION,"c7dd54").
 =======
 -define(VERSION,"ed24a9").
@@ -15,3 +16,6 @@
 =======
 -define(VERSION,"c7506f").
 >>>>>>> a5cd10f... sample
+=======
+-define(VERSION,"a5cd10").
+>>>>>>> 709a001... fix sh

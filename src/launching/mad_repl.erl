@@ -70,7 +70,7 @@ start(Params) ->
     code:add_path(filename:join([cwd(),filename:basename(escript:script_name())])),
     load(),
     Config = load_config(),
-    Driver = mad_utils:get_value(shell_driver,get(rebar),user_drv),
+    Driver = mad_utils:get_value(shell_driver,_Config,user_drv),
     pre(Driver),
     case os:type() of
          {win32,nt} -> shell:start();
