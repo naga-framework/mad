@@ -3,8 +3,7 @@
 -compile(export_all).
 
 compile(Params) ->
-    { Cwd, ConfigFile, Conf } = mad:configs(),
-    mad:info("Compile Params: ~p~n",[Params]),
+    { Cwd, ConfigFile, Conf } = mad_utils:configs(),
     Res = case Params of
          [] -> mad_compile:'compile-deps'(Cwd, ConfigFile, Conf);
          __ -> mad_compile:deps(Cwd, Conf, ConfigFile, [Params])
