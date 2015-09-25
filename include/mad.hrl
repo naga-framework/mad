@@ -1,6 +1,7 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 -define(VERSION,"c7dd54").
 =======
 -define(VERSION,"ed24a9").
@@ -11,3 +12,6 @@
 =======
 -define(VERSION,"af2e1e").
 >>>>>>> 167c36e... tex mad
+=======
+-define(VERSION,"c7506f").
+>>>>>>> a5cd10f... sample
