@@ -111,3 +111,10 @@ verbose(Config,Message) ->
 
 compile(_,_,_,_,_) -> false.
 
+configs() ->
+    Cwd            = try fs:path() catch _:_ -> cwd() end,
+    ConfigFile     = "rebar.config",
+    ConfigFileAbs  = filename:join(Cwd, ConfigFile),
+    Conf           = mad_utils:consult(ConfigFileAbs),
+    Conf1          = mad_script:script(ConfigFileAbs, Conf, ""),
+    {Cwd,ConfigFile,Conf1}.
