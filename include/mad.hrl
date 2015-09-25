@@ -1,5 +1,6 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 -define(VERSION,"c7dd54").
 =======
 -define(VERSION,"ed24a9").
@@ -7,3 +8,6 @@
 =======
 -define(VERSION,"cd4b59").
 >>>>>>> 2405ebf... mad rel means script bundle
+=======
+-define(VERSION,"af2e1e").
+>>>>>>> 167c36e... tex mad
