@@ -101,7 +101,6 @@ compile(Cwd, Inc, Bin, Config, Deps) ->
         X -> compile_naga(Cwd, Inc, Bin, overide(naga_default_opts(),X)++[{erl_opts, ErlOpts}], Deps) 
     end.
 
-
 %% --------------------------------------------------------------------------------------
 %% compile NAGA App
 %% --------------------------------------------------------------------------------------
@@ -118,7 +117,7 @@ compile_naga(Path, Inc, Bin, Opts0, Deps) ->
                 proplists:get_value(mail_tpl_extension, Opts),
             Exts = lists:usort(Extensions),
             Files0 = files_list(SrcDir, Exts, []) ++ files_list(InitDir, SrcExtensions, []),
-            {ok, Cwd} = file:get_cwd(),                        
+            {ok, Cwd} = file:get_cwd(),
             Files = [begin
                          Temp = (X -- Cwd) -- "/",
                           case Path of
@@ -175,7 +174,8 @@ compile_files([File|Files], Inc, Bin, Opts, Deps, Acc) ->
         Err ->
             {true, Acc}
     end.
-     
+
+skip(_,_,_,_,_) -> {true, []}.     
 %% --------------------------------------------------------------------------------------
 %%  compile erlang
 %% --------------------------------------------------------------------------------------
@@ -334,6 +334,7 @@ rest_module(App, Path) ->
 naga_module(App, Path) when is_atom(App) ->
     naga_module(atom_to_list(App), filename:split(Path));
 naga_module(App, Tokens) -> n_m(App, Tokens).
+n_m(App,["..",App,"apps", App, "src"| C]) -> n_m(App, C); 
 n_m(App,[     "apps", App, "src"| C]) -> n_m(App, C); 
 n_m(App,[     "deps", App, "src"| C]) -> n_m(App, C);  
 n_m(App,[".", "apps", App, "src"| C]) -> n_m(App, C);  
@@ -343,6 +344,7 @@ n_m(App,[                  "src"| C]) -> n_m(App, C);
 n_m(App,[       "..", App, "src"| C]) -> n_m(App, C);
 n_m(App,[        ".", App, "src"| C]) -> n_m(App, C);
 n_m(App, Components) ->
+    %io:format("App:~p, T:~p~n",[App,Components]),
     Lc = string:to_lower(lists:concat([App, "_", string:join(Components, "_")])),
     ModuleIOList = re:replace(Lc, "\\.", "_", [global]),
     list_to_atom(binary_to_list(iolist_to_binary(ModuleIOList))).
@@ -379,27 +381,45 @@ tpl_opts(Opts) ->
 
 t(Path) ->
     case filename:split(Path) of
-        [_, App, "src", "controller" |_]                     -> {App, controller};
-        [_, App, "src", "view", "lib", "tag_html" | _]       -> {App, view_tag_helper};
-        [_, App, "src", "view", "lib", "filter_modules" | _] -> {App, view_filter_helper};
-        [_, App, "src", "view", "lib", "tag_modules" | _]    -> {App, view_custom_tags};
-        [_, App, "src", "view"|_]                            -> {App, view};
-        [_, App, "src", "mail", "view"|_]                    -> {App, mail_view};
-        [_, App, "src", "lib"|_]                             -> {App, lib};
-        [_, App, "src", "mail"|_]                            -> {App, mail};
-        [_, App, "src", "model"|_]                           -> {App, model};
-        [_, App, "src", "websocket"|_]                       -> {App, websocket};
-        [_, App, "src", "wamp"|_]                            -> {App, wamp};
-        [_, App, "src", "rest"|_]                            -> {App, rest};
-        [_, App, "src", "n2o"|_]                             -> {App, n2o};
-        [_, App, "src", "n2o_dtl"|_]                         -> {App, n2o_dtl};
-        [_, App, "src"|_] = P ->
+        [_, App, "apps", App, "src", "controller" |_]                     -> {App, controller};
+        [_, App, "apps", App, "src", "view", "lib", "tag_html" | _]       -> {App, view_tag_helper};
+        [_, App, "apps", App, "src", "view", "lib", "filter_modules" | _] -> {App, view_filter_helper};
+        [_, App, "apps", App, "src", "view", "lib", "tag_modules" | _]    -> {App, view_custom_tags};
+        [_, App, "apps", App, "src", "view"|_]                            -> {App, view};
+        [_, App, "apps", App, "src", "mail", "view"|_]                    -> {App, mail_view};
+        [_, App, "apps", App, "src", "lib"|_]                             -> {App, lib};
+        [_, App, "apps", App, "src", "mail"|_]                            -> {App, mail};
+        [_, App, "apps", App, "src", "model"|_]                           -> {App, model};
+        [_, App, "apps", App, "src", "websocket"|_]                       -> {App, websocket};
+        [_, App, "apps", App, "src", "wamp"|_]                            -> {App, wamp};
+        [_, App, "apps", App, "src", "rest"|_]                            -> {App, rest};
+        [_, App, "apps", App, "src", "n2o"|_]                             -> {App, n2o};
+        [_, App, "apps", App, "src"|_] = P ->
             case filename:extension(P) of
                 ".lfe" -> {App, lfe};
                 ".ex"  -> {App, elixir};
                 ".erl" -> {App, erlang}
             end;
-        [_, App, "priv", "init"|_]                           -> {App, init};
+        %% [_, App, "src", "controller" |_]                     -> {App, controller};
+        %% [_, App, "src", "view", "lib", "tag_html" | _]       -> {App, view_tag_helper};
+        %% [_, App, "src", "view", "lib", "filter_modules" | _] -> {App, view_filter_helper};
+        %% [_, App, "src", "view", "lib", "tag_modules" | _]    -> {App, view_custom_tags};
+        %% [_, App, "src", "view"|_]                            -> {App, view};
+        %% [_, App, "src", "mail", "view"|_]                    -> {App, mail_view};
+        %% [_, App, "src", "lib"|_]                             -> {App, lib};
+        %% [_, App, "src", "mail"|_]                            -> {App, mail};
+        %% [_, App, "src", "model"|_]                           -> {App, model};
+        %% [_, App, "src", "websocket"|_]                       -> {App, websocket};
+        %% [_, App, "src", "wamp"|_]                            -> {App, wamp};
+        %% [_, App, "src", "rest"|_]                            -> {App, rest};
+        %% [_, App, "src", "n2o"|_]                             -> {App, n2o};
+        %% [_, App, "src"|_] = P ->
+        %%     case filename:extension(P) of
+        %%         ".lfe" -> {App, lfe};
+        %%         ".ex"  -> {App, elixir};
+        %%         ".erl" -> {App, erlang}
+        %%     end;
+        %% [_, App, "priv", "init"|_]                           -> {App, init};
          _                                                   -> {undefined, skip}
     end.
                 
@@ -586,6 +606,9 @@ is_naga2(Name, Conf) when is_atom(Name)->
     Name == proplists:get_value(name, proplists:get_value(naga_opts, Conf, []), false).    
 
     
+cmd(Params) ->   
+    mad:info("cmd naga: ~p~n",[Params]).
+
 cmd(Cwd, _, Config, Params) ->   
     %mad:info("Compile Static Params: ~p~n",[Params]),
     %mad:info("Cwd: ~p~n",[Cwd]),

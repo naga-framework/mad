@@ -2,6 +2,27 @@
 -copyright('Sina Samavati').
 -compile(export_all).
 
+atomize("app"++_) -> app;
+atomize("dep")    -> deps;
+atomize("deps")   -> deps;
+atomize("cle"++_) -> clean;
+atomize("com"++_) -> compile;
+atomize("up")     -> up;
+atomize("rel"++_) -> release;
+atomize("bun"++_) -> release;
+atomize("deploy") -> deploy;
+atomize("sta"++_) -> start;
+atomize("sto"++_) -> stop;
+atomize("att"++_) -> attach;
+atomize("sh")     -> sh;
+atomize("static") -> static;
+atomize("pla"++_) -> plan;
+atomize("dtl")    -> dtl;
+atomize("naga")   -> naga;
+atomize("lock"++_)-> lock_deps;
+
+atomize(Else)     -> Else.
+
 cwd() -> {ok, Cwd} = file:get_cwd(), Cwd.
 
 home() -> {ok, [[H|_]]} = init:get_argument(home), H.
@@ -28,12 +49,6 @@ get_value(Key, Opts, Default) ->
 
 script(ConfigFile, Conf, _Name) ->
     File = ConfigFile ++ ".script",
-    case _Name of 
-        "gproc" ->
-            io:format("script ~p ~p ~n",[_Name, Conf]),
-            io:format("script result ~p ~n",[file:script(File, [{'CONFIG', Conf}, {'SCRIPT', File}])]);
-        _ -> skip
-    end,            
     case file:script(File, [{'CONFIG', Conf}, {'SCRIPT', File}]) of
         {ok, {error,_}} -> Conf;
         {ok, Out} -> Out;
@@ -48,7 +63,7 @@ sub_dirs(Cwd, ConfigFile, [Dir|T], Acc) ->
     SubDir = filename:join(Cwd, Dir),
     ConfigFile1 = filename:join(SubDir, ConfigFile),
     Conf = consult(ConfigFile1),
-    Conf1 = script(ConfigFile1, Conf, Dir),
+    Conf1 = mad_script:script(ConfigFile1, Conf, Dir),
     Acc1 = sub_dirs(SubDir, ConfigFile, get_value(sub_dirs, Conf1, []),
                     Acc ++ [SubDir]),
     sub_dirs(Cwd, ConfigFile, T, Acc1).
@@ -76,32 +91,11 @@ to_atom(X) when is_list(X) -> list_to_atom(X);
 to_atom(X) when is_binary(X) -> to_atom(binary_to_list(X));
 to_atom(X) -> X.
 
-atomize("static") -> static;
-atomize("com"++_) -> compile;
-atomize("rep"++_) -> repl;
-atomize("up")     -> up;
-atomize("bun"++_) -> bundle;
-atomize("dep")    -> deps;
-atomize("deps")   -> deps;
-atomize("pla"++_) -> plan;
-atomize("app"++_) -> app;
-atomize("lib"++_) -> lib;
-atomize("sta"++_) -> start;
-atomize("att"++_) -> attach;
-atomize("sto"++_) -> stop;
-atomize("cle"++_) -> clean;
-atomize("lin"++_) -> ling;
-atomize("rel"++_) -> release;
-atomize("dtl") -> dtl;
-atomize("naga") -> naga;
-atomize("lock"++_) -> lock_deps;
-atomize(Else) -> Else.
-
 atomize_params_commands(Params) -> atomize_params_commands(Params,[]).
 atomize_params_commands([],New) -> New;
 atomize_params_commands([H|T], New) -> atomize_params_commands(T,[atomize(H)|New]).
 
-fold_params(Params) -> 
+fold_params(Params) ->
    Atomized = atomize_params_commands(Params),
    lists:foldl(fun(X,{Current,Result}) -> 
       case atomize(X) of
