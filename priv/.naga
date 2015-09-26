@@ -1,43 +1,44 @@
 {variables, [{appid, "{{appid}}"}, {port, 8001}]}.
 
 {dir, "{{appid}}"}.
-{dir, "{{appid}}/log"}.
-{dir, "{{appid}}/priv/lang"}.
-%{dir, "{{appid}}/priv/migrations"}.
-{dir, "{{appid}}/ebin"}.
-{dir, "{{appid}}/include"}.
-{dir, "{{appid}}/src/lib"}.
-{dir, "{{appid}}/src/view"}.
-{dir, "{{appid}}/src/view/lib"}.
-{dir, "{{appid}}/src/view/lib/tag_html"}.
-{dir, "{{appid}}/src/view/lib/tag_modules"}.
-{dir, "{{appid}}/src/view/lib/filter_modules"}.
-{dir, "{{appid}}/src/model"}.
-{dir, "{{appid}}/src/controller"}.
-{dir, "{{appid}}/src/websocket"}.
-{dir, "{{appid}}/priv/fcgi/docroot"}.
-%{dir, "{{appid}}/src/mail/view"}.
-%{dir, "{{appid}}/src/test/eunit"}.
-%{dir, "{{appid}}/src/test/functional"}.
+{dir, "{{appid}}/apps/{{appid}}"}.
+{dir, "{{appid}}/apps/{{appid}}/log"}.
+{dir, "{{appid}}/apps/{{appid}}/priv/lang"}.
+%{dir, "{{appid}}/apps/{{appid}}/priv/migrations"}.
+{dir, "{{appid}}/apps/{{appid}}/ebin"}.
+{dir, "{{appid}}/apps/{{appid}}/include"}.
+{dir, "{{appid}}/apps/{{appid}}/src/lib"}.
+{dir, "{{appid}}/apps/{{appid}}/src/view"}.
+{dir, "{{appid}}/apps/{{appid}}/src/view/lib"}.
+{dir, "{{appid}}/apps/{{appid}}/src/view/lib/tag_html"}.
+{dir, "{{appid}}/apps/{{appid}}/src/view/lib/tag_modules"}.
+{dir, "{{appid}}/apps/{{appid}}/src/view/lib/filter_modules"}.
+{dir, "{{appid}}/apps/{{appid}}/src/model"}.
+{dir, "{{appid}}/apps/{{appid}}/src/controller"}.
+{dir, "{{appid}}/apps/{{appid}}/src/websocket"}.
+{dir, "{{appid}}/apps/{{appid}}/priv/fcgi/docroot"}.
+%{dir, "{{appid}}/apps/{{appid}}/src/mail/view"}.
+%{dir, "{{appid}}/apps/{{appid}}/src/test/eunit"}.
+%{dir, "{{appid}}/apps/{{appid}}/src/test/functional"}.
 
-{template, "naga/rebar.config", "{{appid}}/rebar.config"}.
-{template, "naga/priv/project.config", "{{appid}}/priv/{{appid}}.config"}.
-{template, "naga/src/project.app.src", "{{appid}}/src/{{appid}}.app.src"}.
-{template, "naga/src/project_app.erl", "{{appid}}/src/{{appid}}_app.erl"}.
-{template, "naga/src/project_sup.erl", "{{appid}}/src/{{appid}}_sup.erl"}.
-{template, "naga/src/project.erl", "{{appid}}/src/{{appid}}.erl"}.
-{template, "naga/src/controller/project_index_controller.erl", "{{appid}}/src/controller/{{appid}}_index_controller.erl"}.
-{template, "naga/src/view/lib/tag_modules/custom_tags.erl", "{{appid}}/src/view/lib/tag_modules/{{appid}}_custom_tags.erl"}.
-{template, "naga/src/view/lib/filter_modules/custom_filters.erl", "{{appid}}/src/view/lib/filter_modules/{{appid}}_custom_filters.erl"}.
-%{template, "naga/src/mail/outgoing_mail_controller.erl", "{{appid}}/src/mail/{{appid}}_outgoing_mail_controller.erl"}.
-%{template, "naga/src/mail/incoming_mail_controller.erl", "{{appid}}/src/mail/{{appid}}_incoming_mail_controller.erl"}.
-{template, "naga/priv/project.routes", "{{appid}}/priv/{{appid}}.routes"}.
+{template, "naga/rebar.config", "{{appid}}/apps/{{appid}}/rebar.config"}.
+{template, "naga/priv/project.config", "{{appid}}/sys.config"}.
+{template, "naga/src/project.app.src", "{{appid}}/apps/{{appid}}/src/{{appid}}.app.src"}.
+{template, "naga/src/project_app.erl", "{{appid}}/apps/{{appid}}/src/{{appid}}_app.erl"}.
+{template, "naga/src/project_sup.erl", "{{appid}}/apps/{{appid}}/src/{{appid}}_sup.erl"}.
+{template, "naga/src/project.erl", "{{appid}}/apps/{{appid}}/src/{{appid}}.erl"}.
+{template, "naga/src/controller/project_index_controller.erl", "{{appid}}/apps/{{appid}}/src/controller/{{appid}}_index_controller.erl"}.
+{template, "naga/src/view/lib/tag_modules/custom_tags.erl", "{{appid}}/apps/{{appid}}/src/view/lib/tag_modules/{{appid}}_custom_tags.erl"}.
+{template, "naga/src/view/lib/filter_modules/custom_filters.erl", "{{appid}}/apps/{{appid}}/src/view/lib/filter_modules/{{appid}}_custom_filters.erl"}.
+%{template, "naga/src/mail/outgoing_mail_controller.erl", "{{appid}}/apps/{{appid}}/src/mail/{{appid}}_outgoing_mail_controller.erl"}.
+%{template, "naga/src/mail/incoming_mail_controller.erl", "{{appid}}/apps/{{appid}}/src/mail/{{appid}}_incoming_mail_controller.erl"}.
+{template, "naga/priv/project.routes", "{{appid}}/apps/{{appid}}/priv/{{appid}}.routes"}.
 {template, "naga/start.sh", "{{appid}}/start.sh"}.
 
-{file, "naga/priv/fcgi/php-fpm.conf", "{{appid}}/priv/fcgi/php-fpm.conf"}.
-{file, "naga/priv/fcgi/docroot/hello.php", "{{appid}}/priv/fcgi/docroot/hello.php"}.
-{file, "naga/src/view/index/index.html", "{{appid}}/src/view/index/index.html"}.
-{file, "naga/src/view/lib/README", "{{appid}}/src/view/lib/README"}.
+{file, "naga/priv/fcgi/php-fpm.conf", "{{appid}}/apps/{{appid}}/priv/fcgi/php-fpm.conf"}.
+{file, "naga/priv/fcgi/docroot/hello.php", "{{appid}}/apps/{{appid}}/priv/fcgi/docroot/hello.php"}.
+{file, "naga/src/view/index/index.html", "{{appid}}/apps/{{appid}}/src/view/index/index.html"}.
+{file, "naga/src/view/lib/README", "{{appid}}/apps/{{appid}}/src/view/lib/README"}.
 {file, "naga/Makefile", "{{appid}}/Makefile"}.
 
 {chmod, 8#755, "{{appid}}/start.sh"}.
