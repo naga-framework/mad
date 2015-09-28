@@ -3,7 +3,7 @@
 -compile(export_all).
 
 deps(Params) ->
-    { Cwd, ConfigFile, Conf } = mad:configs(),
+    { Cwd, ConfigFile, Conf } = mad_utils:configs(),
     case mad_utils:get_value(deps, Conf, []) of
         [] -> {ok,[]};
         Deps ->
