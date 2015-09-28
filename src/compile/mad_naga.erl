@@ -36,7 +36,6 @@ naga_default_opts() ->
     ,{src_dir,           "src"}
     ,{controller_dir,    "src/controller"}
     ,{n2o_dir,           "src/n2o"}     %"src/n2o/handler"
-    ,{n2o_dtl_dir,       "src/n2o_dtl"} %"src/n2o/dtl"
     ,{lib_dir,           "src/lib"}
     ,{mail_dir,          "src/mail"}
     ,{websocket_dir,     "src/websocket"}
@@ -170,16 +169,12 @@ compile_files([File|Files], Inc, Bin, Opts, Deps, Acc) ->
               view -> ?MODULE:CompileFun(App, File, Inc, Bin, Opts, Deps);
               _ -> ?MODULE:CompileFun(File, Inc, Bin, Opts, Deps)
           end,
-    io:format("Compiling ~p ~s~n", [Type, File]),
+    case Type of skip -> skip; Type -> mad:info("Compiling ~p ~s~n", [Type, File]) end,
     case Res of
         {ok, Module} -> compile_files(Files, Inc, Bin, Opts, Deps, [Module|Acc]);
         Err ->
-            io:format("~p~n",[Err]),
             {true, Acc}
     end.
-
-%skip(_File, _Opts) -> [].
-skip(_,_,_,_,_) -> {true, []}.
      
 %% --------------------------------------------------------------------------------------
 %%  compile erlang
@@ -189,7 +184,7 @@ compile_erl(File, Inc,  Bin, Opts, Deps) ->
     BeamFile = erl_to_beam(Bin, File),
     Compiled = mad_compile:is_compiled(BeamFile, File),
     Module = list_to_atom(filename:rootname(filename:basename(BeamFile))),
-    %% io:format("Bin ~p~n, Inc ~p~n, Deps ~p~n, Module ~p~n, Opts ~p~n",
+    %% mad:info("Bin ~p~n, Inc ~p~n, Deps ~p~n, Module ~p~n, Opts ~p~n",
     %%           [Bin, Inc, Deps, Module, Opt0]),
     if  Compiled =:= false ->
         Opts1 = ?COMPILE_OPTS(Inc, Bin, [verbose] ++ Opt0, Deps),
@@ -323,7 +318,7 @@ compile_rest(File, Inc, Bin, Opts, Deps) ->
                             Err
                     end;
                 Err -> 
-                    io:format("Error ~p",[Err]),
+                    mad:info("Error ~p",[Err]),
                     Err end;
         true ->
             {ok, Module}
@@ -592,8 +587,8 @@ is_naga2(Name, Conf) when is_atom(Name)->
 
     
 cmd(Cwd, _, Config, Params) ->   
-    %io:format("Compile Static Params: ~p~n",[Params]),
-    %io:format("Cwd: ~p~n",[Cwd]),
+    %mad:info("Compile Static Params: ~p~n",[Params]),
+    %mad:info("Cwd: ~p~n",[Cwd]),
     cmd(Cwd, Params, Config).
 
 cmd(Cwd,["files", Path | Params], _Conf) ->
@@ -611,7 +606,7 @@ cmd(Cwd,["modules", Path | Params], _Conf) ->
 cmd_files(false,_,_,_) -> false;
 cmd_files(true, _, _, []) -> false; 
 cmd_files(true, Dir, Opts, [P|T]) ->
-    [io:format("~p,~p~n",[P,F])||F<-files(P, Dir, Opts)],
+    [mad:info("~p,~p~n",[P,F])||F<-files(P, Dir, Opts)],
     cmd_files(true, Dir, Opts, T).
    
 %% naga_cmd(_, Cwd,["build", App], Opts) -> 
@@ -633,7 +628,7 @@ opts(Dir) ->
     opts(Dir, Config).    
 opts(Dir, Config) ->    
     Name = app_name(Dir),
-    %io:format("Name ~p~n",[Name]),
+    %mad:info("Name ~p~n",[Name]),
     case is_naga(Name, Config) of
         true -> {{_, NagaOpts}, _} = get_kv(naga_opts, Config, []),
                 {true, overide(naga_default_opts(),NagaOpts)};
