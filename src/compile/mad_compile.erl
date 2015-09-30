@@ -45,10 +45,10 @@ dep(Cwd, _Conf, ConfigFile, Name) ->
   
     case IsNaga of false ->
             SrcDir = filename:join([mad_utils:src(DepPath)]),
-            AllFiles = files(SrcDir,".yrl") ++ 
-                files(SrcDir,".xrl") ++ 
-                files(SrcDir,".erl") ++ % comment this to build with erlc/1
-                files(SrcDir,".app.src"),
+            AllFiles = files(SrcDir,".yrl$") ++ 
+                files(SrcDir,".xrl$") ++ 
+                files(SrcDir,".erl$") ++ % comment this to build with erlc/1
+                files(SrcDir,".app.src$"),
             Files = case mad_utils:get_value(erl_first_files, Conf1, []) of
                         []         -> AllFiles;
                         FirstFiles ->

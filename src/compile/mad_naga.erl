@@ -168,9 +168,14 @@ compile_files([File|Files], Inc, Bin, Opts, Deps, Acc) ->
               view -> ?MODULE:CompileFun(App, File, Inc, Bin, Opts, Deps);
               _ -> ?MODULE:CompileFun(File, Inc, Bin, Opts, Deps)
           end,
-    case Type of skip -> skip; Type -> mad:info("Compiling ~p ~s~n", [Type, File]) end,
+    
     case Res of
-        {ok, Module} -> compile_files(Files, Inc, Bin, Opts, Deps, [Module|Acc]);
+        {ok, {compiled,Module}} ->
+          mad:info("Compiling ~p ~s~n", [Type, File]), 
+          compile_files(Files, Inc, Bin, Opts, Deps, [Module|Acc]);
+        {ok, Module} ->
+          %mad:info("Compiling ~p ~s~n", [Type, File]), 
+          compile_files(Files, Inc, Bin, Opts, Deps, [Module|Acc]);
         Err ->
             {true, Acc}
     end.
@@ -189,7 +194,7 @@ compile_erl(File, Inc,  Bin, Opts, Deps) ->
     if  Compiled =:= false ->
         Opts1 = ?COMPILE_OPTS(Inc, Bin, [verbose] ++ Opt0, Deps),
         case compile:file(File, Opts1) of
-            ok -> {ok, Module};
+            ok -> {ok, {compiled,Module}};
             Err -> Err end;
         true -> {ok, Module} end.
 
@@ -210,7 +215,7 @@ compile_lfe(File, Inc, Bin, Opts, Deps) ->
                 {ok, Module, Binary, _Warnings} ->
                     OutFile = filename:join([Bin, filename:basename(File, ".lfe") ++ ".beam"]),
                     file:write_file(OutFile, Binary),            
-                    {ok, Module};
+                    {ok, {compiled,Module}};
                 Other -> Other end;
         true ->  {ok, Module} end.
 
@@ -280,7 +285,8 @@ compile_view(_AppName, Dir, File, Module, Opts) ->
     Compiled = mad_compile:is_compiled(BeamFile, File),
     if  Compiled =:= false ->
            TplOpts1 = [{compiler_options,[verbose]}, report | TplOpts],
-           erlydtl:compile_file(File, Module, TplOpts1);
+           case erlydtl:compile_file(File, Module, TplOpts1) of
+            {ok, M} -> {ok, {compiled,M}}; Err -> Err end;
         true -> {ok, Module}
     end.
 
@@ -313,7 +319,7 @@ compile_rest(File, Inc, Bin, Opts, Deps) ->
                 {ok, _ModuleName, Binary, _Warning} ->                     
                     case file:write_file(BeamFile, Binary) of
                         ok -> 
-                            {ok, Module};
+                            {ok, {compiled,Module}};
                         {error, Reason} = Err ->
                             Err
                     end;

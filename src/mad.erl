@@ -12,7 +12,7 @@ main(Params)      ->
                                    (X,{C,R}) -> {[X|C],R} 
                                end,
                                {[],[]}, lists:map(fun atomize/1, Params)),
-    io:format("Invalid ~p, Valid ~p~n",[Invalid, Valid]),
+    %io:format("Invalid ~p, Valid ~p~n",[Invalid, Valid]),
     return(lists:any(fun({error,_}) -> true;
                                 (_) -> false end,
            lists:flatten(
