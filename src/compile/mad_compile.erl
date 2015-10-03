@@ -52,7 +52,9 @@ dep(Cwd, _Conf, ConfigFile, Name) ->
             Files = case mad_utils:get_value(erl_first_files, Conf1, []) of
                         []         -> AllFiles;
                         FirstFiles ->
-                            FirstFiles1 = lists:map(fun (F) -> filename:join(SrcDir, F ++ ".erl") end, FirstFiles),
+                            FirstFiles1 = lists:map(fun ("src/"++F) -> F1=case filename:extension(F) of ".erl" -> F; _->F++".erl"end,filename:join(SrcDir, F1);
+                                            (F)->F1 =case filename:extension(F) of ".erl" -> F; _->F++".erl"end, 
+                                                     filename:join(SrcDir, F1) end, FirstFiles),
                             FirstFiles1 ++ lists:filter(fun (F) -> lists:member(F, FirstFiles) == false end, AllFiles)
                     end,
 
@@ -72,7 +74,7 @@ dep(Cwd, _Conf, ConfigFile, Name) ->
                     code:replace_path(Name,EbinDir),
 
                     Opts = mad_utils:get_value(erl_opts, Conf1, []),
-                    FilesStatus = compile_files(Files,IncDir, EbinDir, Opts,Includes),
+                    FilesStatus = compile_files(sorted_files(Files),IncDir, EbinDir, Opts,Includes),
                     DTLStatus = mad_dtl:compile(DepPath,Conf1),
                     PortStatus = lists:any(fun(X)->X end,mad_port:compile(DepPath,Conf1)),
 
