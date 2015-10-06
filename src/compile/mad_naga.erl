@@ -12,12 +12,13 @@ help() ->
 
 naga_default_opts() ->
     [
-     {model_manager,     none} %none | boss
+     {model_manager,     none} %none | boss 
     ,{controller_manager,none} %erl|lfe|pmod|boss 
     ,{session_manager,   none} %naga_session
     ,{i18n_manager,      none} %naga_i18n
     ,{mail_manager,      none} %naga_smtp
-    ,{static_manager,    cowboy_static} % naga_static     
+    ,{static_manager,    cowboy_static} % naga_static
+    ,{force,             false}     
     ,{src_extension,     [".erl", ".lfe", ".ex"]}
     ,{erl_extension,     [".erl"]}
     ,{lfe_extension,     [".lfe"]}
@@ -28,7 +29,7 @@ naga_default_opts() ->
     ,{ebin_dir,          "ebin"}
     ,{priv_dir,          "priv"}
     ,{static_dir,        "priv/static"}
-    ,{download_dir,      "scratch"}
+    ,{upload_dir,        "priv/upload"}
     ,{init_dir,          "priv/init"}
     ,{lang_dir,          "priv/lang"}
     ,{fcgi_dir,          "priv/fcgi"}
@@ -59,27 +60,11 @@ naga_default_opts() ->
 %% --------------------------------------------------------------------------------------
 compile(Cwd, Inc, Bin, Config, Deps, true) ->
     compile(Cwd, Inc, Bin, Config, Deps);
+
 compile(Path, Inc, Bin, Config, Deps, false) ->
     case filelib:is_file(Path) of
         true ->
             Ext = filename:extension(Path),
-            {Bin, Inc} = case filename:split(Path) of
-                             ["..", App, "src"|_] -> 
-                                 {filename:join(["..",App, "ebin"]),
-                                  filename:join(["..",App, "include"])};
-                             ["..", App, "priv"|_] -> 
-                                 {filename:join(["..",App, "ebin"]),
-                                  filename:join(["..",App, "include"])};
-                             ["deps", App, "src"|_] -> 
-                                 {filename:join(["deps",App, "ebin"]),
-                                  filename:join(["deps",App, "include"])};
-                             ["apps", App, "src"|_] -> 
-                                 {filename:join(["apps",App, "ebin"]),
-                                  filename:join(["apps",App, "include"])};
-                             ["src"|_] -> 
-                                 {"./ebin", "./include" }                             
-                         end,
-            %%io:format("Bin ~p, Inc ~p~n, Ext ~p",[Bin, Inc, Extension]),
             case lists:member(Ext, [".erl", ".lfe"]) of true ->
             case compile_files([Path], Inc, Bin, Config, Deps, []) of
                 {false, _} -> false;
@@ -96,9 +81,14 @@ compile(Path, Inc, Bin, Config, Deps, false) ->
 compile(Cwd, Inc, Bin, Config, Deps) ->
     {{_, NagaOpts}, C1} = get_kv(naga_opts, Config, []),
     {{_,ErlOpts}, _} = get_kv(erl_opts, C1, []),
-    case lists:keydelete(name, 1, NagaOpts) of
+    {{_,Force}, _} = get_kv(force, C1, []),
+    O = lists:keydelete(name, 1, NagaOpts),
+    Overide = case Force of [] -> O; _-> O ++ [{force, Force}] end, 
+    case Overide of
         [] -> compile_naga(Cwd, Inc, Bin, naga_default_opts()++[{erl_opts, ErlOpts}], Deps);           
-        X -> compile_naga(Cwd, Inc, Bin, overide(naga_default_opts(),X)++[{erl_opts, ErlOpts}], Deps) 
+        _ ->
+          Opts = overide(naga_default_opts(),Overide), 
+          compile_naga(Cwd, Inc, Bin, Opts++[{erl_opts, ErlOpts}], Deps) 
     end.
 
 %% --------------------------------------------------------------------------------------
@@ -153,6 +143,7 @@ compile_naga(Path, Inc, Bin, Opts0, Deps) ->
                                      Opts1 = [{root_dir, root_dir(Path)}|Opts0],
                                      {Path, Opts1}
                              end,
+            %io:format(">>> compile_naga Path ~p -> File ~p~n",[Path, File]),
             case compile_files([File], Inc, Bin, Opts2, Deps, []) of
                 {false, _} -> false;
                 _ -> true
@@ -189,8 +180,8 @@ compile_erl(File, Inc,  Bin, Opts, Deps) ->
     BeamFile = erl_to_beam(Bin, File),
     Compiled = mad_compile:is_compiled(BeamFile, File),
     Module = list_to_atom(filename:rootname(filename:basename(BeamFile))),
-    %% mad:info("Bin ~p~n, Inc ~p~n, Deps ~p~n, Module ~p~n, Opts ~p~n",
-    %%           [Bin, Inc, Deps, Module, Opt0]),
+    % mad:info("Bin ~p~n, Inc ~p~n, Deps ~p~n, Module ~p~n, Opts ~p~n",
+    %           [Bin, Inc, Deps, Module, Opt0]),
     if  Compiled =:= false ->
         Opts1 = ?COMPILE_OPTS(Inc, Bin, [verbose] ++ Opt0, Deps),
         case compile:file(File, Opts1) of
@@ -260,13 +251,15 @@ compile_controller(".lfe", File, Inc, Bin, Opts, Deps) ->
 %%  compile view template
 %% --------------------------------------------------------------------------------------
 
-compile_view(AppName, File, _Inc, _Bin, Opts, _Deps) ->    
+compile_view(AppName, File, _Inc, _Bin, Opts, _Deps) ->  
     Dir = case proplists:get_value(root_dir, Opts) of
               undefined -> case filename:split(File) of
-                               ["deps", AppName |_] -> filename:join([".", "deps", AppName]);
+                               ["..", AppName, "apps", AppName |_] -> filename:join(["apps", AppName]);
+                               ["deps", AppName |_] -> filename:join(["deps", AppName]);
                                [".","src"|_] -> {ok,Cwd} = file:get_cwd(), Cwd
                            end;
               Else -> Else end,
+    io:format("AppName ~p, File ~p, Dir ~p~n",[AppName,File,Dir]),  
     compile_view(AppName, Dir, File, Opts).
     
 compile_view(AppName, Dir, File, Opts) ->
@@ -280,10 +273,12 @@ compile_view(AppName, Dir, File, Opts) ->
 compile_view(_AppName, Dir, File, Module, Opts) ->
     OutDir = dir(ebin_dir, Opts, Dir),
     DocRoot = dir(view_dir, Opts, Dir),
+    %io:format("Dir ~p, File ~p, Module ~p, OutDir ~p, DocRoot ~p~n",[Dir, File, Module, OutDir, DocRoot]),
     TplOpts = overide(tpl_opts(Opts), [{out_dir,OutDir},{doc_root, DocRoot}]),
     BeamFile = file_to_beam(OutDir, atom_to_list(Module)),
     Compiled = mad_compile:is_compiled(BeamFile, File),
-    if  Compiled =:= false ->
+    Force = proplists:get_value(force,Opts,false), 
+    if  Compiled =:= false orelse Force ->
            TplOpts1 = [{compiler_options,[verbose]}, report | TplOpts],
            case erlydtl:compile_file(File, Module, TplOpts1) of
             {ok, M} -> {ok, {compiled,M}}; Err -> Err end;
@@ -387,45 +382,64 @@ tpl_opts(Opts) ->
 
 t(Path) ->
     case filename:split(Path) of
-        [_, App, "apps", App, "src", "controller" |_]                     -> {App, controller};
-        [_, App, "apps", App, "src", "view", "lib", "tag_html" | _]       -> {App, view_tag_helper};
-        [_, App, "apps", App, "src", "view", "lib", "filter_modules" | _] -> {App, view_filter_helper};
-        [_, App, "apps", App, "src", "view", "lib", "tag_modules" | _]    -> {App, view_custom_tags};
-        [_, App, "apps", App, "src", "view"|_]                            -> {App, view};
-        [_, App, "apps", App, "src", "mail", "view"|_]                    -> {App, mail_view};
-        [_, App, "apps", App, "src", "lib"|_]                             -> {App, lib};
-        [_, App, "apps", App, "src", "mail"|_]                            -> {App, mail};
-        [_, App, "apps", App, "src", "model"|_]                           -> {App, model};
-        [_, App, "apps", App, "src", "websocket"|_]                       -> {App, websocket};
-        [_, App, "apps", App, "src", "wamp"|_]                            -> {App, wamp};
-        [_, App, "apps", App, "src", "rest"|_]                            -> {App, rest};
-        [_, App, "apps", App, "src", "n2o"|_]                             -> {App, n2o};
-        [_, App, "apps", App, "src"|_] = P ->
+        [_, Base, "apps", App, "src", "controller" |_]                     -> {App, controller};
+        [_, Base, "apps", App, "src", "view", "lib", "tag_html" | _]       -> {App, view_tag_helper};
+        [_, Base, "apps", App, "src", "view", "lib", "filter_modules" | _] -> {App, view_filter_helper};
+        [_, Base, "apps", App, "src", "view", "lib", "tag_modules" | _]    -> {App, view_custom_tags};
+        [_, Base, "apps", App, "src", "view"|_]                            -> {App, view};
+        [_, Base, "apps", App, "src", "mail", "view"|_]                    -> {App, mail_view};
+        [_, Base, "apps", App, "src", "lib"|_]                             -> {App, lib};
+        [_, Base, "apps", App, "src", "mail"|_]                            -> {App, mail};
+        [_, Base, "apps", App, "src", "model"|_]                           -> {App, model};
+        [_, Base, "apps", App, "src", "websocket"|_]                       -> {App, websocket};
+        [_, Base, "apps", App, "src", "wamp"|_]                            -> {App, wamp};
+        [_, Base, "apps", App, "src", "rest"|_]                            -> {App, rest};
+        [_, Base, "apps", App, "src", "n2o"|_]                             -> {App, n2o};
+        [_, Base, "apps", App, "src"|_] = P ->
             case filename:extension(P) of
                 ".lfe" -> {App, lfe};
                 ".ex"  -> {App, elixir};
                 ".erl" -> {App, erlang}
             end;
-        %% [_, App, "src", "controller" |_]                     -> {App, controller};
-        %% [_, App, "src", "view", "lib", "tag_html" | _]       -> {App, view_tag_helper};
-        %% [_, App, "src", "view", "lib", "filter_modules" | _] -> {App, view_filter_helper};
-        %% [_, App, "src", "view", "lib", "tag_modules" | _]    -> {App, view_custom_tags};
-        %% [_, App, "src", "view"|_]                            -> {App, view};
-        %% [_, App, "src", "mail", "view"|_]                    -> {App, mail_view};
-        %% [_, App, "src", "lib"|_]                             -> {App, lib};
-        %% [_, App, "src", "mail"|_]                            -> {App, mail};
-        %% [_, App, "src", "model"|_]                           -> {App, model};
-        %% [_, App, "src", "websocket"|_]                       -> {App, websocket};
-        %% [_, App, "src", "wamp"|_]                            -> {App, wamp};
-        %% [_, App, "src", "rest"|_]                            -> {App, rest};
-        %% [_, App, "src", "n2o"|_]                             -> {App, n2o};
-        %% [_, App, "src"|_] = P ->
-        %%     case filename:extension(P) of
-        %%         ".lfe" -> {App, lfe};
-        %%         ".ex"  -> {App, elixir};
-        %%         ".erl" -> {App, erlang}
-        %%     end;
-        %% [_, App, "priv", "init"|_]                           -> {App, init};
+        [_, Base, "deps", App, "src", "controller" |_]                     -> {App, controller};
+        [_, Base, "deps", App, "src", "view", "lib", "tag_html" | _]       -> {App, view_tag_helper};
+        [_, Base, "deps", App, "src", "view", "lib", "filter_modules" | _] -> {App, view_filter_helper};
+        [_, Base, "deps", App, "src", "view", "lib", "tag_modules" | _]    -> {App, view_custom_tags};
+        [_, Base, "deps", App, "src", "view"|_]                            -> {App, view};
+        [_, Base, "deps", App, "src", "mail", "view"|_]                    -> {App, mail_view};
+        [_, Base, "deps", App, "src", "lib"|_]                             -> {App, lib};
+        [_, Base, "deps", App, "src", "mail"|_]                            -> {App, mail};
+        [_, Base, "deps", App, "src", "model"|_]                           -> {App, model};
+        [_, Base, "deps", App, "src", "websocket"|_]                       -> {App, websocket};
+        [_, Base, "deps", App, "src", "wamp"|_]                            -> {App, wamp};
+        [_, Base, "deps", App, "src", "rest"|_]                            -> {App, rest};
+        [_, Base, "deps", App, "src", "n2o"|_]                             -> {App, n2o};
+        [_, Base, "deps", App, "src"|_] = P ->
+            case filename:extension(P) of
+                ".lfe" -> {App, lfe};
+                ".ex"  -> {App, elixir};
+                ".erl" -> {App, erlang}
+            end;
+        [_, App, "src", "controller" |_]                     -> {App, controller};
+        [_, App, "src", "view", "lib", "tag_html" | _]       -> {App, view_tag_helper};
+        [_, App, "src", "view", "lib", "filter_modules" | _] -> {App, view_filter_helper};
+        [_, App, "src", "view", "lib", "tag_modules" | _]    -> {App, view_custom_tags};
+        [_, App, "src", "view"|_]                            -> {App, view};
+        [_, App, "src", "mail", "view"|_]                    -> {App, mail_view};
+        [_, App, "src", "lib"|_]                             -> {App, lib};
+        [_, App, "src", "mail"|_]                            -> {App, mail};
+        [_, App, "src", "model"|_]                           -> {App, model};
+        [_, App, "src", "websocket"|_]                       -> {App, websocket};
+        [_, App, "src", "wamp"|_]                            -> {App, wamp};
+        [_, App, "src", "rest"|_]                            -> {App, rest};
+        [_, App, "src", "n2o"|_]                             -> {App, n2o};
+        [_, App, "src"|_] = P ->
+            case filename:extension(P) of
+                ".lfe" -> {App, lfe};
+                ".ex"  -> {App, elixir};
+                ".erl" -> {App, erlang}
+            end;
+        [_, App, "priv", "init"|_]                           -> {App, init};
          _                                                   -> {undefined, skip}
     end.
                 
@@ -554,6 +568,8 @@ out_dir(Opts) -> dir(ebin_dir,Opts).
 root_dir(Path) ->
     root_dir2(filename:split(Path)).
 
+root_dir2(["..", App , "apps", App| _]) ->
+    filename:join(["..", App, "apps", App]);
 root_dir2(["..", App | _]) ->
     filename:join(["..", App]);
 root_dir2(["deps", App | _]) ->
@@ -671,3 +687,75 @@ overide(Opts,[]) -> Opts;
 overide(L1,[{K,V}|T]) -> overide(lists:keyreplace(K,1, L1, {K,V}),T). 
 
 file_to_beam(Bin, Filename) -> filename:join(Bin, filename:basename(Filename) ++ ".beam").
+
+
+%% for boss app
+sorted_files(Files) ->
+    G = digraph:new(),
+    [ digraph:add_vertex(G, N) || N <- Files ],
+    case all_edges(Files) of
+        [] -> Files;
+        Edges ->
+            [digraph:add_edge(G, A, B) || {A,B} <- Edges],
+            lists:reverse(digraph_utils:topsort(G))
+    end.
+
+all_edges(Files) ->
+    Tmp = [{filename:basename(F), F} || F <- Files],
+    all_edges(Files, Tmp, []).
+
+all_edges([], _, Acc) -> Acc;
+all_edges([H|T], Files, Acc) ->
+    {ok, Fd} = file:open(H, [read]),
+    Edges = parse_attrs(H, Fd, Files, []),
+    all_edges(T, Files, Edges ++ Acc).
+
+parse_attrs(File, Fd, Files, Includes) ->
+    case io:parse_erl_form(Fd, "") of
+        {ok, Form, _Line} ->
+            case erl_syntax:type(Form) of
+                attribute ->
+                    NewIncludes = process_attr(File, Form, Files, Includes),
+                    parse_attrs(File, Fd, Files, NewIncludes);
+                _ ->
+                    parse_attrs(File, Fd, Files, Includes)
+            end;
+        {eof, _} ->
+            Includes;
+        _Err ->
+            parse_attrs(File, Fd, Files, Includes)
+    end.
+
+process_attr(File, Form, Files, Includes) ->
+    AttrName = erl_syntax:atom_value(erl_syntax:attribute_name(Form)),
+    process_attr(File, Form, Files, Includes, AttrName).
+
+process_attr(File, Form, Files, Includes, behaviour) ->
+    [FileNode] = erl_syntax:attribute_arguments(Form),
+    case erl_syntax:atom_value(FileNode) of
+        application -> Includes;
+        gen_event -> Includes;
+        gen_server -> Includes;
+        supervisor -> Includes;
+        Mod -> 
+            edge(File, Mod, Files, Includes) end;
+process_attr(File, Form, Files, Includes, compile) ->
+    [Arg] = erl_syntax:attribute_arguments(Form),
+    case erl_syntax:concrete(Arg) of
+        {parse_transform, Mod} ->
+            edge(File, Mod, Files, Includes);
+        {core_transform, Mod} ->
+            edge(File, Mod, Files, Includes);
+        _ ->
+            Includes
+    end;
+process_attr(_File, _Form, _Files, Includes, _AttrName) ->
+    Includes.
+
+edge(File, Mod, Files, Includes) ->
+    F = atom_to_list(Mod) ++ ".erl",
+    case proplists:get_value(F, Files) of
+        undefined -> Includes;
+        Else ->             
+            [{File, Else}|Includes]
+    end.

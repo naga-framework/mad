@@ -74,7 +74,7 @@ dep(Cwd, _Conf, ConfigFile, Name) ->
                     code:replace_path(Name,EbinDir),
 
                     Opts = mad_utils:get_value(erl_opts, Conf1, []),
-                    FilesStatus = compile_files(sorted_files(Files),IncDir, EbinDir, Opts,Includes),
+                    FilesStatus = compile_files(mad_naga:sorted_files(Files),IncDir, EbinDir, Opts,Includes),
                     DTLStatus = mad_dtl:compile(DepPath,Conf1),
                     PortStatus = lists:any(fun(X)->X end,mad_port:compile(DepPath,Conf1)),
 
@@ -94,7 +94,7 @@ dep(Cwd, _Conf, ConfigFile, Name) ->
             case mad_naga:compile(Name, IncDir, EbinDir, Conf1, Includes) of 
                 false -> put(Name, compiled), false;
                 Err ->
-                    io:format("Err ~p~n",[Err]),
+                    mad:info("dtl error ~p~n",[Err]),
                     true
             end
     end.
@@ -133,74 +133,5 @@ is_compiled(BeamFile, File) -> mad_utils:last_modified(BeamFile) >= mad_utils:la
 list(X) when is_atom(X) -> atom_to_list(X);
 list(X) -> X.
 
-%% for boss app
-sorted_files(Files) ->
-    G = digraph:new(),
-    [ digraph:add_vertex(G, N) || N <- Files ],
-    case all_edges(Files) of
-        [] -> Files;
-        Edges ->
-            [digraph:add_edge(G, A, B) || {A,B} <- Edges],
-            lists:reverse(digraph_utils:topsort(G))
-    end.
 
-all_edges(Files) ->
-    Tmp = [{filename:basename(F), F} || F <- Files],
-    all_edges(Files, Tmp, []).
-
-all_edges([], _, Acc) -> Acc;
-all_edges([H|T], Files, Acc) ->
-    {ok, Fd} = file:open(H, [read]),
-    Edges = parse_attrs(H, Fd, Files, []),
-    all_edges(T, Files, Edges ++ Acc).
-
-parse_attrs(File, Fd, Files, Includes) ->
-    case io:parse_erl_form(Fd, "") of
-        {ok, Form, _Line} ->
-            case erl_syntax:type(Form) of
-                attribute ->
-                    NewIncludes = process_attr(File, Form, Files, Includes),
-                    parse_attrs(File, Fd, Files, NewIncludes);
-                _ ->
-                    parse_attrs(File, Fd, Files, Includes)
-            end;
-        {eof, _} ->
-            Includes;
-        _Err ->
-            parse_attrs(File, Fd, Files, Includes)
-    end.
-
-process_attr(File, Form, Files, Includes) ->
-    AttrName = erl_syntax:atom_value(erl_syntax:attribute_name(Form)),
-    process_attr(File, Form, Files, Includes, AttrName).
-
-process_attr(File, Form, Files, Includes, behaviour) ->
-    [FileNode] = erl_syntax:attribute_arguments(Form),
-    case erl_syntax:atom_value(FileNode) of
-        application -> Includes;
-        gen_event -> Includes;
-        gen_server -> Includes;
-        supervisor -> Includes;
-        Mod -> 
-            edge(File, Mod, Files, Includes) end;
-process_attr(File, Form, Files, Includes, compile) ->
-    [Arg] = erl_syntax:attribute_arguments(Form),
-    case erl_syntax:concrete(Arg) of
-        {parse_transform, Mod} ->
-            edge(File, Mod, Files, Includes);
-        {core_transform, Mod} ->
-            edge(File, Mod, Files, Includes);
-        _ ->
-            Includes
-    end;
-process_attr(_File, _Form, _Files, Includes, _AttrName) ->
-    Includes.
-
-edge(File, Mod, Files, Includes) ->
-    F = atom_to_list(Mod) ++ ".erl",
-    case proplists:get_value(F, Files) of
-        undefined -> Includes;
-        Else ->             
-            [{File, Else}|Includes]
-    end.
              
