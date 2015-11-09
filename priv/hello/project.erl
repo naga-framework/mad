@@ -5,7 +5,7 @@
 -compile(export_all).
 
 main(A)    -> mad_repl:sh(A).
-start(_,_) -> supervisor:start_link({local,sample},sample,[]).
+start(_,_) -> supervisor:start_link({local,{{appid}} }, {{appid}},[]).
 stop(_)    -> ok.
 init([])   -> case cowboy:start_http(http,3,port(),env()) of
                    {ok, _}   -> ok;
@@ -27,7 +27,6 @@ points() -> cowboy_router:compile([{'_', [
               ,{ "/ws/[...]",                       n2o_stream, []       }
               %,{"/[:app/[:controller/[:action]]]",  naga_cowboy,[]       }
               ,{"/[:controller/[:action]]",         naga_cowboy,[]       }
-              ,{ "/[...]",                          naga_cowboy,[]       }
               ,{ '_',                               n2o_cowboy, []       }]}]).
 
-log_modules() -> [n2o_client,n2o_nitrogen,n2o_stream,wf_convert,{{appid}},{{appid}}_routes].
+log_modules() -> [n2o_client,n2o_nitrogen,n2o_stream,wf_convert,index,error,{{appid}},{{appid}}_routes].

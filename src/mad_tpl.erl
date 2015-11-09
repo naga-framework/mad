@@ -44,7 +44,8 @@ create(Files, FinalTemplate, VarsCtx) ->
     Context = resolve_variables(Variables, Context0),
     Force = "1",
     %io:format("Context ~p~n", [[ begin {_, Y} = dict:find(X, Context), {X, Y} end|| X <- dict:fetch_keys(Context)]] ),
-    execute_template(Files, FinalTemplate, none, Name, Context, Force, []).
+    execute_template(Files, FinalTemplate, none, Name, Context, Force, []),
+    {ok,Name}.
 
 % --------------------------------------------------------------------------------
 % internal
