@@ -37,6 +37,7 @@ atomize("att"++_) -> 'attach';
 atomize("sh")     -> 'sh';
 atomize("rep"++_) -> 'sh';
 atomize("pla"++_) -> 'release';
+atomize("cre"++_) -> 'tpl';
 atomize(Else)     -> Else.
 
 profile()         -> application:get_env(mad,profile,mad_local).
@@ -64,4 +65,5 @@ help()            -> info("MAD Container Tool version ~s~n",[?VERSION]),
                      info("   command = app     | deps  | clean | compile | up~n"),
                      info("           | release [ beam  | ling  | script  | runc | depot ]~n"),
                      info("           | deploy  | start | stop  | attach  | sh ~n"),
+                     info("           | create name=<name> tpl=<hello|bossdb> ~n"),
                      return(false).
