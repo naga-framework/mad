@@ -48,7 +48,7 @@ compile_erlydtl_files(Opts) ->
     ViewsOpts = [{SourceExt,ModuleExt}]++Views,
 
     Files = lists:foldl(fun({Ext,_},Bcc) -> 
-                            B = filelib:fold_files(DocRoot, Ext, true, fun(F, Acc) -> [F|Acc] end, []),
+                            B = filelib:fold_files(DocRoot, Ext++"$", true, fun(F, Acc) -> [F|Acc] end, []),
                             B++Bcc end, [], ViewsOpts),
 
     Compile = fun(F) ->
