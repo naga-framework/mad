@@ -33,5 +33,5 @@
 {file, "hello/project_view_error_404.html",        "{{appid}}/apps/{{appid}}/src/view/error/404.html"}.
 {file, "hello/project_priv_templates_index.html",  "{{appid}}/apps/{{appid}}/priv/templates/index.html"}.
 {file, "hello/project_priv_static_synrc.css",      "{{appid}}/apps/{{appid}}/priv/static/synrc.css"}.
-{file, "hello/project_priv_spa_index.htm",         "{{appid}}/apps/{{appid}}/priv/spa/index.htm"}.
+{file, "hello/project_priv_static_spa_index.htm",  "{{appid}}/apps/{{appid}}/priv/static/spa/index.htm"}.
 
