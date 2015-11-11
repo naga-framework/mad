@@ -10,6 +10,7 @@ get_kv(K, Opts, Default) ->
 cfg_dft() ->
     [
      {enable,          false} %% isNaga
+    ,{force,           false}  
     ,{auto_escape,     false}  
     ,{extensions,      [{".html","_html"},{".js", "_js"},{".css","_css"},{".json","_json"},{".txt","_txt"}]}
     ,{controller_dir,  ["src","controller"]}
