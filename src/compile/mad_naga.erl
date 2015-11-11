@@ -9,57 +9,46 @@ get_kv(K, Opts, Default) ->
 
 cfg_dft() ->
     [
-     {model_manager,     none} %% boss | none     
-    ,{mail_tpl_extension,[".html", ".txt"]}
-    ,{controller_dir,    "src/controller"}
-    ,{mail_dir,          "src/mail"}
-    ,{model_dir,         "src/model"}
-    ,{mail_view_dir,     "src/mail/view"}
-    ,{view_dir,          "src/view"}
-    ,{view_lib_dir,      "src/view/lib"}
-    ,{view_tag_dir,      "src/view/lib/tag_modules"}
-    ,{view_filter_dir,   "src/view/lib/filter_modules"}
-    ,{view_htmltags_dir, "src/view/lib/tag_html"}
-    ,{custom_tags,       "priv/custom_tags"}
+     {enable,          false} %% isNaga
+    ,{auto_escape,     false}  
+    ,{extensions,      [{".html","_html"},{".js", "_js"},{".css","_css"},{".json","_json"},{".txt","_txt"}]}
+    ,{controller_dir,  ["src","controller"]}
+    ,{view_dir,        ["src","view"]}
+    ,{tag_dir,         ["src","view","lib", "tag_modules"]}
+    ,{filter_dir,      ["src","view","lib", "filter_modules"]}
+    ,{htmltags_dir,    ["src","view","lib", "tag_html"]}
+    ,{custom_tags,     ["src","view","lib", "custom_tags"]}
     ].
 
-view_module([_, App, "src"| C],O) ->
+view_module(["src"| C]=F,O) ->
+    {{_,E},_} = get_kv(extensions, O, ""),
+    {{_,App},_} = get_kv(app, O, undefined),
     Lc = string:to_lower(lists:concat([App, "_",string:join(C, "_")])),
-    filename:rootname(Lc) ++ proplists:get_value(filename:extension(Lc),O).  
+    filename:rootname(Lc) ++ proplists:get_value(filename:extension(Lc),E);  
 
+view_module([_, App, "src"| C]=F,O) ->
+    {{_,E},_} = get_kv(extensions, O, ""),
+    {{_,App},_} = get_kv(app, O, undefined),
+    Lc = string:to_lower(lists:concat([App, "_",string:join(C, "_")])),
+    filename:rootname(Lc) ++ proplists:get_value(filename:extension(Lc),E). 
 
-%% --------------------------------------------------------------------------------------
-%%  
-%% --------------------------------------------------------------------------------------
+files(view_dir, Opts)     -> views(view_dir, Opts);
+files(htmltags_dir, Opts) -> views(htmltags_dir, Opts);
+files({Type,Ext}, Opts)   ->
+    {{_, TypeDir}, Opts1} = get_kv(Type, Opts, ""),
+    {{_, Cwd}, Opts2}     = get_kv(cwd, Opts1, ""),
+    Files = mad_compile:files(TypeDir,Ext),[(F--Cwd)--"/"||F<-Files];
 
-files(Dir,Ext) -> mad_compile:files(Dir,Ext).
-files(view, Dir, Opts) ->
-    {{_, SourceExt}, Opts1} = get_kv(source_ext, Opts, ""),
-    {{_, ModuleExt}, Opts2} = get_kv(module_ext, Opts1, ""),
-    {{_, Views },        _} = get_kv(naga,       Opts2, []),
-    O = [{SourceExt,ModuleExt}]++Views,
-    {ok, Cwd} = file:get_cwd(),
-    Files = lists:foldl(fun({Ext,_},Acc) -> 
-     					files(filename:join([Dir,"src","view"]),Ext) 
-     					++ Acc end, [], O),[(F--Cwd)--"/"||F<-Files];
+files(Type, Opts) -> files({Type,".erl"}, Opts).
 
-files(Type, Dir, Opts) ->
-    {ok, Cwd} = file:get_cwd(),
-    Files = files(filename:join([Dir,"src",atom_to_list(Type)]),".erl").
+views(Type, Opts) ->
+    {{_, Exts}, Opts1}    = get_kv(extensions, Opts, ""),
+    {{_, TypeDir}, Opts2} = get_kv(Type, Opts1, ""),
+    {{_, Cwd}, Opts3}     = get_kv(cwd, Opts2, ""),
+    Files = lists:foldl(fun({Ext,_},Acc) -> mad_compile:files(TypeDir,Ext) ++ Acc end, 
+                        [], Exts),[(F--Cwd)--"/"||F<-Files].
 
-%% --------------------------------------------------------------------------------------
-%%  
-%% --------------------------------------------------------------------------------------
-modules(view, Dir, Opts) ->
-    {{_, SourceExt}, Opts1} = get_kv(source_ext, Opts, ""),
-    {{_, ModuleExt}, Opts2} = get_kv(module_ext, Opts1, ""),
-    {{_, Views },        _} = get_kv(naga,       Opts2, []),
-    O = [{SourceExt,ModuleExt}]++Views,
-  [view_module(filename:split(F),O)||F<-files(view,Dir,Opts)];
-modules(controller, Dir, Opts) ->
-  [list_to_atom(filename:rootname(filename:basename(F)))||F<-files(controller,Dir,Opts)].
-
-%% --------------------------------------------------------------------------------------
-%%  
-%% --------------------------------------------------------------------------------------
+modules(view_dir, O)     -> [view_module(filename:split(F),O)||F<-files(view_dir,O)];
+modules(htmltags_dir, O) -> [view_module(filename:split(F),O)||F<-files(htmltags_dir,O)];
+modules(Type, O)         -> [list_to_atom(filename:rootname(filename:basename(F)))||F<-files(Type,O)].
 

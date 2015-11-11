@@ -7,25 +7,30 @@
 main(A)    -> mad_repl:sh(A).
 start(_,_) -> supervisor:start_link({local,{{appid}} }, {{appid}},[]).
 stop(_)    -> ok.
-init([])   -> case cowboy:start_http(http,3,port(),env()) of
+init([])   -> 
+			  {ok, Modules} = application:get_key({{appid}},modules), 
+              [code:ensure_loaded(M)||M<-Modules],
+			  case cowboy:start_http(http,acceptors(),port(),env()) of
                    {ok, _}   -> ok;
                    {error,_} -> halt(abort,[]) end, sup().
 
-sup()    -> { ok, { { one_for_one, 5, 100 }, [] } }.
-env()    -> [ { env, [ { dispatch, points() } ] } ].
+acceptors()-> wf:config({{appid}},acceptors,3);
 
-static() ->   { dir, "apps/{{appid}}/priv/static", mime() }.
-n2o()    ->   { dir, "deps/n2o/priv",              mime() }.
-naga()   ->   { dir, "deps/naga/priv",             mime() }.
-mime()   -> [ { mimetypes, cow_mimetypes, all   } ].
-port()   -> [ { port, wf:config(n2o,port,8001)  } ].
+sup()      -> { ok, { { one_for_one, 5, 100 }, [] } }.
+env()      -> [ { env, [ { dispatch, points() } ] } ].
+
+static()   ->   { dir, "apps/{{appid}}/priv/static", mime() }.
+n2o()      ->   { dir, "deps/n2o/priv",              mime() }.
+naga()     ->   { dir, "deps/naga/priv",             mime() }.
+
+mime()     -> [ { mimetypes, cow_mimetypes, all   } ].
+port()     -> [ { port, wf:config(n2o,port,8001)  } ].
 
 points() -> cowboy_router:compile([{'_', [
                { "/static/[...]",                   n2o_static, static() }
               ,{ "/n2o/[...]",                      n2o_static, n2o()    }
-              ,{ "/n2o/[...]",                      n2o_static, naga()   }
-              ,{ "/ws/[...]",                       n2o_stream, []       }
-              %,{"/[:app/[:controller/[:action]]]",  naga_cowboy,[]       }
+              ,{ "/naga/[...]",                     n2o_static, naga()   }
+              ,{ "/ws/[:controller/[:action]]",     n2o_stream, []       }
               ,{"/[:controller/[:action]]",         naga_cowboy,[]       }
               ,{ '_',                               n2o_cowboy, []       }]}]).
 
