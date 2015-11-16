@@ -104,7 +104,8 @@ is_compiled(BeamFile, File) -> mad_utils:last_modified(BeamFile) >= mad_utils:la
                  mad_compile:deps(Cwd, Conf, ConfigFile, Apps) end.
 
 'compile-deps'(Cwd, ConfigFile, Conf) ->
-    mad_compile:deps(Cwd, Conf, ConfigFile, mad_utils:get_value(deps, Conf, [])).
+    SortedDeps = mad_lock:ordered_deps(Conf, Cwd),
+    mad_compile:deps(Cwd, Conf, ConfigFile, SortedDeps).
 
 list(X) when is_atom(X) -> atom_to_list(X);
 list(X) -> X.
