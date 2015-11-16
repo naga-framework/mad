@@ -69,7 +69,8 @@ dep(Cwd, _Conf, ConfigFile, Name) ->
 
             Opts = mad_utils:get_value(erl_opts, Conf1, []),
             DTLStatus = mad_dtl:compile(DepPath,Conf1),
-            FilesStatus = compile_files(Files,IncDir, EbinDir, Opts,Includes),
+            SortedFiles = mad_naga:sorted_files(Files),
+            FilesStatus = compile_files(SortedFiles,IncDir, EbinDir, Opts,Includes),
             PortStatus = lists:any(fun(X)->X end,mad_port:compile(DepPath,Conf1)),
 
             put(Name, compiled),
