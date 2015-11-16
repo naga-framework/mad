@@ -68,13 +68,14 @@ dep(Cwd, _Conf, ConfigFile, Name) ->
             code:replace_path(Name,EbinDir),
 
             Opts = mad_utils:get_value(erl_opts, Conf1, []),
+            ModelStatus = mad_boss:compile(DepPath,Conf1,IncDir,Includes),
             DTLStatus = mad_dtl:compile(DepPath,Conf1),
             SortedFiles = mad_naga:sorted_files(Files),
             FilesStatus = compile_files(SortedFiles,IncDir, EbinDir, Opts,Includes),
             PortStatus = lists:any(fun(X)->X end,mad_port:compile(DepPath,Conf1)),
 
             put(Name, compiled),
-            case DepsRes orelse FilesStatus orelse DTLStatus orelse PortStatus of
+            case DepsRes orelse FilesStatus orelse DTLStatus orelse PortStatus orelse ModelStatus of
                  true -> {error,Name};
                  false -> {ok,Name} end end.
 
