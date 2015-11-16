@@ -71,7 +71,7 @@ compile_erlydtl_naga_files(Opts) ->
     {{_, Cwd},     O3} = get_kv(cwd,     O2, ""),
 
     Get = fun(X) -> 
-            {{_, Val },  _} = get_kv(X, Naga, proplists:get_value(X, mad_naga:cfg_dft())),
+            {{_, Val },  _} = get_kv(X, Naga, proplists:get_value(X, mad_naga:cfg_dtl())),
             case Val of true -> true; false-> false; [{_,_}|_]=E -> E; 
                 Dir ->filename:join(Val) end end,
 
