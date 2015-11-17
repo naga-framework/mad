@@ -1,11 +1,11 @@
--module(sample).
+-module({{appid}}).
 -behaviour(supervisor).
 -behaviour(application).
 -export([init/1, start/2, stop/1, main/1]).
 -compile(export_all).
 
 main(A)    -> mad_repl:sh(A).
-start(_,_) -> supervisor:start_link({local,sample},sample,[]).
+start(_,_) -> supervisor:start_link({local,{{appid}} },{{appid}},[]).
 stop(_)    -> ok.
 init([])   -> case cowboy:start_http(http,3,port(),env()) of
                    {ok, _}   -> ok;
@@ -13,7 +13,7 @@ init([])   -> case cowboy:start_http(http,3,port(),env()) of
 
 sup()    -> { ok, { { one_for_one, 5, 100 }, [] } }.
 env()    -> [ { env, [ { dispatch, points() } ] } ].
-static() ->   { dir, "apps/sample/priv/static", mime() }.
+static() ->   { dir, "apps/{{appid}}/priv/static", mime() }.
 n2o()    ->   { dir, "deps/n2o/priv",           mime() }.
 mime()   -> [ { mimetypes, cow_mimetypes, all   } ].
 port()   -> [ { port, wf:config(n2o,port,8001)  } ].

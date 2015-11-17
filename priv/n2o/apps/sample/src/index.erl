@@ -5,7 +5,7 @@
 
 peer()    -> wf:to_list(wf:peer(?REQ)).
 message() -> wf:js_escape(wf:html_encode(wf:to_list(wf:q(message)))).
-main()    -> #dtl{file="index",app=sample,bindings=[{body,body()}]}.
+main()    -> #dtl{file="index",app={{appid}},bindings=[{body,body()}]}.
 body()    -> [ #panel{id=history}, #textbox{id=message},
                #button{id=send,body="Chat",postback=chat,source=[message]} ].
 
