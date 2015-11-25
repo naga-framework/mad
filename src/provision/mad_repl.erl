@@ -59,6 +59,8 @@ load_apps(Params,_,_Acc) -> [ application:ensure_all_started(list_to_atom(A))||A
 
 cwd() -> case  file:get_cwd() of {ok, Cwd} -> Cwd; _ -> "." end.
 
+sh(["-sname", Name| Rest]) -> net_kernel:start([list_to_atom(Name), shortnames]),sh(Rest);
+sh(["-name", Name| Rest]) -> net_kernel:start([list_to_atom(Name), longnames]),sh(Rest);
 sh(Params) ->
     { _Cwd,_ConfigFileName,_Config } = mad_utils:configs(),
     SystemPath = filelib:wildcard(code:root_dir() ++ "/lib/{"
