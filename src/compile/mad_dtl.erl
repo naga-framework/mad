@@ -6,7 +6,9 @@ compile(Dir,Config) ->
     case mad_utils:get_value(erlydtl_opts, Config, []) of
         [] -> false;
          X -> O = validate_erlydtl_opts(Dir,X),
-              case compile_erlydtl_files(O) of true -> true; false -> compile_erlydtl_naga_files(O) end end.
+              case compile_erlydtl_files(O) of true -> true; 
+                false -> case compile_erlydtl_naga_files({naga,view_dir},O) of 
+                         true -> true; false -> compile_erlydtl_naga_files({naga_mail,mail_dir},O) end end end.
 
 get_kv(K, Opts, Default) ->
     V = mad_utils:get_value(K, Opts, Default),
@@ -64,9 +66,9 @@ compile_erlydtl_files(Opts) ->
     lists:any(fun({error,_}) -> true; (ok) -> false end,[Compile(F) || F <- Files]).
 
 
-compile_erlydtl_naga_files(Opts) ->
+compile_erlydtl_naga_files({App0,D}, Opts) ->
 
-    {{_, Naga},    O1} = get_kv(naga,    Opts, []),    
+    {{_, Naga},    O1} = get_kv(App0,    Opts, []),    
     {{_, OutDir},  O2} = get_kv(out_dir, O1, "ebin"),
     {{_, Cwd},     O3} = get_kv(cwd,     O2, ""),
 
@@ -78,7 +80,7 @@ compile_erlydtl_naga_files(Opts) ->
     case Get(enable) of true -> 
         NagaExt   = Get(extensions),
         Force     = Get(force),
-        DocRoot   = filename:join(Cwd,Get(view_dir)),
+        DocRoot   = filename:join(Cwd,Get(D)),
         TagDir    = filename:join(Cwd,Get(tag_dir)),
         FilterDir = filename:join(Cwd,Get(filter_dir)),
         HtmlTags  = filename:join(Cwd,Get(htmltags_dir)),
@@ -96,7 +98,7 @@ compile_erlydtl_naga_files(Opts) ->
          {custom_filters_modules,mad_naga:modules(tag_dir, OO)++mad_naga:modules(filter_dir, OO)},
          {custom_tags_modules, mad_naga:modules(custom_tags, OO)},
          {custom_tags_dir, mad_naga:modules(htmltags_dir, OO)}],
-
+      
         Files = lists:foldl(fun({Ext,_},Bcc) -> 
                                 B = filelib:fold_files(DocRoot, Ext++"$", true, fun(F, Acc) -> [F|Acc] end, []),
                                 B++Bcc end, [], NagaExt),
@@ -105,7 +107,8 @@ compile_erlydtl_naga_files(Opts) ->
             BeamFile = file_to_beam(OutDir, atom_to_list(ModuleName)),
             Compiled = mad_compile:is_compiled(BeamFile, F),
             if  Compiled =:= false orelse Force ->
-                 mad:info("DTL Compiling ~s~n", [F -- mad_utils:cwd()]),
+                 %mad:info("DTL options ~p",[NagaOpts]),
+                 mad:info("DTL Compiling ~s --> ~s~n", [F -- mad_utils:cwd(), atom_to_list(ModuleName)]),
                  Res = erlydtl:compile(F, ModuleName, NagaOpts),
                  case Res of {error,Error} -> mad:info("Error: ~p~n",[Error]);
                                         OK -> OK end;

@@ -9,12 +9,14 @@ get_kv(K, Opts, Default) ->
 
 cfg_dtl() ->
     [
-     {enable,          false} %% isNaga
+     {enable,          false}
     ,{force,           false}  
     ,{auto_escape,     false}  
     ,{extensions,      [{".html","_html"},{".js", "_js"},{".css","_css"},{".json","_json"},{".txt","_txt"}]}
     ,{controller_dir,  ["src","controller"]}
     ,{view_dir,        ["src","view"]}
+    ,{mail_dir,        ["src","mail"]}
+    ,{mail_extension,  [{".html","_view_html"}, {".txt","_view_txt"}]}
     ,{tag_dir,         ["src","view","lib", "tag_modules"]}
     ,{filter_dir,      ["src","view","lib", "filter_modules"]}
     ,{htmltags_dir,    ["src","view","lib", "tag_html"]}
