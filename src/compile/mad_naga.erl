@@ -65,7 +65,8 @@ sorted_files(Files) ->
         [] -> Files;
         Edges ->
             [digraph:add_edge(G, A, B) || {A,B} <- Edges],
-            lists:reverse(digraph_utils:topsort(G))
+            L=lists:reverse(digraph_utils:topsort(G)),
+            digraph:delete(G),L
     end.
 
 all_edges(Files) ->
