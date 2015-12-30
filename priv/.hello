@@ -29,7 +29,7 @@
 
 {file, "hello/project_view_layout_n2o.html",       "{{appid}}/apps/{{appid}}/src/view/layout/n2o.html"}.
 {file, "hello/project_view_layout_page.html",      "{{appid}}/apps/{{appid}}/src/view/layout/page.html"}.
-{file, "hello/project_view_index_hello.html",      "{{appid}}/apps/{{appid}}/src/view/index/index.html"}.
+{file, "hello/project_view_index_hello.html",      "{{appid}}/apps/{{appid}}/src/view/index/hello.html"}.
 {file, "hello/project_view_error_404.html",        "{{appid}}/apps/{{appid}}/src/view/error/404.html"}.
 {file, "hello/project_priv_templates_index.html",  "{{appid}}/apps/{{appid}}/priv/templates/index.html"}.
 {file, "hello/project_priv_static_synrc.css",      "{{appid}}/apps/{{appid}}/priv/static/synrc.css"}.
