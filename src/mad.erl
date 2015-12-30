@@ -34,8 +34,8 @@ atomize("sto"++_) -> 'stop';
 atomize("att"++_) -> 'attach';
 atomize("sh")     -> 'sh';
 atomize("rep"++_) -> 'sh';
-atomize("pla"++_) -> 'release';
 atomize("cre"++_) -> 'tpl';
+atomize("pla"++_) -> 'resolve';
 atomize(Else)     -> Else.
 
 profile()         -> application:get_env(mad,profile,mad_local).
@@ -50,6 +50,8 @@ errors(X)         -> info("RETURN: ~tp~n",[X]), [{error,X}].
 return(true)      -> 1;
 return(false)     -> 0;
 return(X)         -> X.
+
+host()            -> Host = try {ok,H} = inet:gethostname(), H catch _:_ -> <<>> end.
 
 info(Format)      -> io:format(lists:concat([Format,"\r"])).
 info(Format,Args) -> io:format(lists:concat([Format,"\r"]),Args).
