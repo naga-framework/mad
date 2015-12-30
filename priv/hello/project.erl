@@ -7,14 +7,13 @@
 main(A)    -> mad_repl:sh(A).
 start(_,_) -> supervisor:start_link({local,{{appid}} }, {{appid}},[]).
 stop(_)    -> ok.
-init([])   -> 
-			  {ok, Modules} = application:get_key({{appid}},modules), 
+init([])   -> {ok, Modules} = application:get_key({{appid}},modules), 
               [code:ensure_loaded(M)||M<-Modules],
-			  case cowboy:start_http(http,acceptors(),port(),env()) of
-                   {ok, _}   -> ok;
-                   {error,_} -> halt(abort,[]) end, sup().
+              case cowboy:start_http(http,acceptors(),port(),env()) of
+                  {ok, _}   -> ok;
+                  {error,_} -> halt(abort,[]) end, sup().
 
-acceptors()-> wf:config({{appid}},acceptors,3);
+acceptors()-> wf:config({{appid}},acceptors,3).
 
 sup()      -> { ok, { { one_for_one, 5, 100 }, [] } }.
 env()      -> [ { env, [ { dispatch, points() } ] } ].
@@ -30,8 +29,12 @@ points() -> cowboy_router:compile([{'_', [
                { "/static/[...]",                   n2o_static, static() }
               ,{ "/n2o/[...]",                      n2o_static, n2o()    }
               ,{ "/naga/[...]",                     n2o_static, naga()   }
-              ,{ "/ws/[:controller/[:action]]",     n2o_stream, []       }
-              ,{"/[:controller/[:action]]",         naga_cowboy,[]       }
-              ,{ '_',                               n2o_cowboy, []       }]}]).
+              ,{ "/ws/:controller/:action/[...]",   n2o_stream, []       }
+              ,{ "/ws/:controller/[...]",           n2o_stream, []       }
+              ,{ "/ws/[...]",                       n2o_stream, []       }
+              ,{ "/:controller/:action/[...]",      naga_cowboy, []      }
+              ,{ "/:controller/[...]",              naga_cowboy, []      }
+              ,{ "/[...]",                          naga_cowboy, []      }
+            ]}]).
 
 log_modules() -> [n2o_client,n2o_nitrogen,n2o_stream,wf_convert,index,error,{{appid}},{{appid}}_routes].

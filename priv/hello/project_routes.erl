@@ -7,22 +7,25 @@
 finish(State, Ctx) -> {ok, State, Ctx}.
 init(State, Ctx) ->
     Req = Ctx#cx.req,
-    {Bindings,_}  =cowboy_req:bindings(Req),
-
     {Controller,_}=cowboy_req:binding(controller,Req),
     {Action,_}    =cowboy_req:binding(action,Req),
+    {Method,_}    =cowboy_req:method(Req),
+    {Params,_}    =cowboy_req:path_info(Req),
+    {C,A} = match(Controller,Action),
+    R = #{app    => {{appid}},
+          method => Method,
+          controller => C,
+          action => A,
+          params => Params
+         },
+    %wf:info(?MODULE, "ROUTE ~p : ~p, ~p",[wf:path(Req), C, A]),
+    {ok, State, Ctx#cx{path=R,module=C}}.
 
-    Route = match(Controller,Action),
-    wf:info(?MODULE, "ROUTE ~p : ~p, ~p",[Route, Controller, Action]),
-    {ok, State, Ctx#cx{path=Route,module=Route#route.controller}}.
-
-
-match(undefined        ,undefined)    -> #route{app={{appid}},   controller=index  ,action=hello};
-match(<<"redirect">>   ,undefined)    -> #route{app={{appid}},   controller=index  ,action=redirect};
-match(<<"redirect">>   ,<<"header">>) -> #route{app={{appid}},   controller=index  ,action=redirect_header};
-match(<<"moved">>      ,undefined)    -> #route{app={{appid}},   controller=index  ,action=moved};
-match(<<"moved">>      ,<<"header">>) -> #route{app={{appid}},   controller=index  ,action=moved_header};
-match(<<"action">>     ,<<"other">>)  -> #route{app={{appid}},   controller=index  ,action=hello};
-match(<<"hello">>      ,undefined)    -> #route{app={{appid}},   controller=index  ,action=hello};
-match(_,_)                            -> #route{app={{appid}},   controller=error  ,action='404'}.
-    
+match(undefined        ,undefined)    -> {index ,hello};
+match(<<"redirect">>   ,undefined)    -> {index ,redirect};
+match(<<"redirect">>   ,<<"header">>) -> {index ,redirect_header};
+match(<<"moved">>      ,undefined)    -> {index ,moved};
+match(<<"moved">>      ,<<"header">>) -> {index ,moved_header};
+match(<<"action">>     ,<<"other">>)  -> {index ,hello};
+match(<<"hello">>      ,undefined)    -> {index ,hello};
+match(_,_)                            -> {error ,'404'}.
