@@ -61,13 +61,12 @@ modules(Type, O)         -> [list_to_atom(filename:rootname(filename:basename(F)
 sorted_files(Files) ->
     G = digraph:new(),
     [ digraph:add_vertex(G, N) || N <- Files ],
-    case all_edges(Files) of
+    R = case all_edges(Files) of
         [] -> Files;
         Edges ->
             [digraph:add_edge(G, A, B) || {A,B} <- Edges],
-            L=lists:reverse(digraph_utils:topsort(G)),
-            digraph:delete(G),L
-    end.
+            lists:reverse(digraph_utils:topsort(G))
+    end, digraph:delete(G), R.
 
 all_edges(Files) ->
     Tmp = [{filename:basename(F), F} || F <- Files],
