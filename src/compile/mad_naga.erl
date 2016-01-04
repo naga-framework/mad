@@ -23,6 +23,15 @@ cfg_dtl() ->
     ,{custom_tags,     ["src","view","lib", "custom_tags"]}
     ].
 
+find_files(Path, Exts) -> lists:foldl(fun({Ext,_},Bcc) -> 
+                        B = filelib:fold_files(Path, Ext++"$", true, fun(F, Acc) -> [F|Acc] end, []),
+                        B++Bcc end, [], Exts).
+
+dir(App)    -> case code:priv_dir(App) of {error,_} = E -> E;  D -> filename:dirname(D) end.    
+config(Dir) -> ConfigFile = filename:join(Dir, "rebar.config"),
+               Conf = mad_utils:consult(ConfigFile),
+               mad_script:script(ConfigFile, Conf, "").
+                              
 %% -- DTL
 
 view_module(["src"| C]=F,O) ->
@@ -42,7 +51,8 @@ files(htmltags_dir, Opts) -> views(htmltags_dir, Opts);
 files({Type,Ext}, Opts)   ->
     {{_, TypeDir}, Opts1} = get_kv(Type, Opts, ""),
     {{_, Cwd}, Opts2}     = get_kv(cwd, Opts1, ""),
-    Files = mad_compile:files(TypeDir,Ext),[(F--Cwd)--"/"||F<-Files];
+    Files = mad_compile:files(TypeDir,Ext),
+    [(F--Cwd)--"/"||F<-Files];
 
 files(Type, Opts) -> files({Type,".erl"}, Opts).
 
@@ -50,12 +60,13 @@ views(Type, Opts) ->
     {{_, Exts}, Opts1}    = get_kv(extensions, Opts, ""),
     {{_, TypeDir}, Opts2} = get_kv(Type, Opts1, ""),
     {{_, Cwd}, Opts3}     = get_kv(cwd, Opts2, ""),
-    Files = lists:foldl(fun({Ext,_},Acc) -> mad_compile:files(TypeDir,Ext) ++ Acc end, 
-                        [], Exts),[(F--Cwd)--"/"||F<-Files].
+    Files = lists:foldl(fun({Ext,_},Acc) -> mad_compile:files(TypeDir,Ext) ++ Acc end,[], Exts),
+    [(F--Cwd)--"/"||F<-Files].
 
 modules(view_dir, O)     -> [view_module(filename:split(F),O)||F<-files(view_dir,O)];
 modules(htmltags_dir, O) -> [view_module(filename:split(F),O)||F<-files(htmltags_dir,O)];
 modules(Type, O)         -> [list_to_atom(filename:rootname(filename:basename(F)))||F<-files(Type,O)].
+
 
 
 sorted_files(Files) ->
