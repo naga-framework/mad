@@ -63,7 +63,7 @@ compile_erlydtl_files(Opts) ->
              true -> ok end
     end,
 
-    lists:any(fun({error,_}) -> true; (ok) -> false end,[Compile(F) || F <- Files]).
+    lists:any(fun({error,_}) -> true; ({ok,_}) -> false; (ok) -> false end,[Compile(F) || F <- Files]).
 
 
 compile_erlydtl_naga_files({App0,D}, Opts) ->
@@ -99,9 +99,8 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
          {custom_tags_modules, mad_naga:modules(custom_tags, OO)},
          {custom_tags_dir, mad_naga:modules(htmltags_dir, OO)}],
       
-        Files = lists:foldl(fun({Ext,_},Bcc) -> 
-                                B = filelib:fold_files(DocRoot, Ext++"$", true, fun(F, Acc) -> [F|Acc] end, []),
-                                B++Bcc end, [], NagaExt),
+        Files = mad_naga:find_files(DocRoot,NagaExt),
+        
         Compile = fun(F) ->
             ModuleName = module_name(F, NagaOpts),
             BeamFile = file_to_beam(OutDir, atom_to_list(ModuleName)),
