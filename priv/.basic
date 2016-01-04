@@ -26,6 +26,7 @@
 {template, "hello/project_controller_index.erl",   "{{appid}}/apps/{{appid}}/src/controller/index.erl"}.
 {template, "hello/project_controller_error.erl",   "{{appid}}/apps/{{appid}}/src/controller/error.erl"}.
 {template, "hello/project_routes.erl",             "{{appid}}/apps/{{appid}}/src/{{appid}}_routes.erl"}.
+{template, "hello/project.routes",                 "{{appid}}/apps/{{appid}}/priv/{{appid}}.routes"}.
 
 {file, "hello/project_view_layout_n2o.html",       "{{appid}}/apps/{{appid}}/src/view/layout/n2o.html"}.
 {file, "hello/project_view_layout_page.html",      "{{appid}}/apps/{{appid}}/src/view/layout/page.html"}.
