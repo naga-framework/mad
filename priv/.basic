@@ -16,23 +16,23 @@
 {dir, "{{appid}}/apps/{{appid}}/priv/spa"}.
 {dir, "{{appid}}/apps/{{appid}}/priv/templates"}.
 
-{template, "hello/rebar2.config",                  "{{appid}}/apps/{{appid}}/rebar.config"}.
-{template, "hello/rebar1.config",                  "{{appid}}/apps/rebar.config"}.
-{template, "hello/rebar.config",                   "{{appid}}/rebar.config"}.
-{template, "hello/vm.args",                        "{{appid}}/vm.args"}.
-{template, "hello/sys.config",                     "{{appid}}/sys.config"}.
-{template, "hello/project.app.src",                "{{appid}}/apps/{{appid}}/src/{{appid}}.app.src"}.
-{template, "hello/project.erl",                    "{{appid}}/apps/{{appid}}/src/{{appid}}.erl"}.
-{template, "hello/project_controller_index.erl",   "{{appid}}/apps/{{appid}}/src/controller/index.erl"}.
-{template, "hello/project_controller_error.erl",   "{{appid}}/apps/{{appid}}/src/controller/error.erl"}.
-{template, "hello/project_routes.erl",             "{{appid}}/apps/{{appid}}/src/{{appid}}_routes.erl"}.
-{template, "hello/project.routes",                 "{{appid}}/apps/{{appid}}/priv/{{appid}}.routes"}.
+{template, "basic/rebar2.config",                  "{{appid}}/apps/{{appid}}/rebar.config"}.
+{template, "basic/rebar1.config",                  "{{appid}}/apps/rebar.config"}.
+{template, "basic/rebar.config",                   "{{appid}}/rebar.config"}.
+{template, "basic/vm.args",                        "{{appid}}/vm.args"}.
+{template, "basic/sys.config",                     "{{appid}}/sys.config"}.
+{template, "basic/project.app.src",                "{{appid}}/apps/{{appid}}/src/{{appid}}.app.src"}.
+{template, "basic/project.erl",                    "{{appid}}/apps/{{appid}}/src/{{appid}}.erl"}.
+{template, "basic/project_controller_index.erl",   "{{appid}}/apps/{{appid}}/src/controller/index.erl"}.
+{template, "basic/project_controller_error.erl",   "{{appid}}/apps/{{appid}}/src/controller/error.erl"}.
+{template, "basic/project_routes.erl",             "{{appid}}/apps/{{appid}}/src/{{appid}}_routes.erl"}.
+{template, "basic/project.routes",                 "{{appid}}/apps/{{appid}}/priv/{{appid}}.routes"}.
 
-{file, "hello/project_view_layout_n2o.html",       "{{appid}}/apps/{{appid}}/src/view/layout/n2o.html"}.
-{file, "hello/project_view_layout_page.html",      "{{appid}}/apps/{{appid}}/src/view/layout/page.html"}.
-{file, "hello/project_view_index_hello.html",      "{{appid}}/apps/{{appid}}/src/view/index/hello.html"}.
-{file, "hello/project_view_error_404.html",        "{{appid}}/apps/{{appid}}/src/view/error/404.html"}.
-{file, "hello/project_priv_templates_index.html",  "{{appid}}/apps/{{appid}}/priv/templates/index.html"}.
-{file, "hello/project_priv_static_synrc.css",      "{{appid}}/apps/{{appid}}/priv/static/synrc.css"}.
-{file, "hello/project_priv_static_spa_index.htm",  "{{appid}}/apps/{{appid}}/priv/static/spa/index.htm"}.
+{file, "basic/project_view_layout_n2o.html",       "{{appid}}/apps/{{appid}}/src/view/layout/n2o.html"}.
+{file, "basic/project_view_layout_page.html",      "{{appid}}/apps/{{appid}}/src/view/layout/page.html"}.
+{file, "basic/project_view_index_basic.html",      "{{appid}}/apps/{{appid}}/src/view/index/basic.html"}.
+{file, "basic/project_view_error_404.html",        "{{appid}}/apps/{{appid}}/src/view/error/404.html"}.
+{file, "basic/project_priv_templates_index.html",  "{{appid}}/apps/{{appid}}/priv/templates/index.html"}.
+{file, "basic/project_priv_static_synrc.css",      "{{appid}}/apps/{{appid}}/priv/static/synrc.css"}.
+{file, "basic/project_priv_static_spa_index.htm",  "{{appid}}/apps/{{appid}}/priv/static/spa/index.htm"}.
 
