@@ -16,7 +16,7 @@ cfg_dtl() ->
     ,{controller_dir,  ["src","controller"]}
     ,{view_dir,        ["src","view"]}
     ,{mail_dir,        ["src","mail"]}
-    ,{mail_extension,  [{".html","_view_html"}, {".txt","_view_txt"}]}
+    ,{mail_extension,  [{".html","_html"}, {".txt","_txt"}]}
     ,{tag_dir,         ["src","view","lib", "tag_modules"]}
     ,{filter_dir,      ["src","view","lib", "filter_modules"]}
     ,{htmltags_dir,    ["src","view","lib", "tag_html"]}
