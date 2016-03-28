@@ -21,7 +21,9 @@ ret({ok,_}) -> false;
 ret({ok,_,[]}) -> false;
 ret({ok,_,X}) -> lines(warning,X), false;
 ret({ok,_,X,_}) -> lines(warning,X), false.
-
+nthtail(S,F) -> case catch lists:nthtail(S,F) of
+	              {'EXIT', Err} -> mad:info("Error ~p",[Err]), [];
+	              E -> E end.
 lines(Tag,X) ->
     S=case file:get_cwd() of {ok,Cwd} -> length(Cwd); _ -> 0 end,
-    [[ mad:info("Line ~p: ~p ~p in ~p~n",[ L,Tag,R,lists:nthtail(S,F) ]) || {L,_,R} <- E ] || {F,E} <- X ], true.
+    [[ mad:info("Line ~p: ~p ~p in ~p~n",[ L,Tag,R, nthtail(S,F)]) || {L,_,R} <- E ] || {F,E} <- X ], true.
