@@ -7,7 +7,7 @@
 main(A)    -> mad_repl:sh(A).
 start(_,_) -> supervisor:start_link({local,{{appid}} }, {{appid}},[]).
 stop(_)    -> ok.
-init([])   -> naga:start({{appid}}), 
+init([])   -> naga:start([{{appid}}]), 
               naga:watch({{appid}}),
               sup().
 sup()      -> { ok, { { one_for_one, 5, 100 }, [] } }.

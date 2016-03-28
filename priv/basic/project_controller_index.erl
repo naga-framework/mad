@@ -1,4 +1,4 @@
--module(index).
+-module({{appid}}_index).
 -compile(export_all).
 -include_lib("n2o/include/wf.hrl").
 -include_lib("nitro/include/nitro.hrl").
@@ -32,13 +32,13 @@ action_other(<<"GET">>, _, _)   ->
     Count = case wf:cache(count) of undefined -> 0; C -> C + 1 end,
 	wf:cache(count, Count),
 	wf:info(?MODULE,"ACTION action_other executed",[]),
-    {action_other, #route{app=toto,controller=index,action=hello}}.
+    {action_other, #route{application={{appid}},controller=index,action=hello}}.
 
 render_other(<<"GET">>, _, _)   -> 
     Count = case wf:cache(count) of undefined -> 0; C -> C + 1 end,
 	wf:cache(count, Count),
     wf:info(?MODULE,"ACTION render_other executed",[]),
-    {render_other, #route{app=toto,controller=index,action=hello}}.
+    {render_other, #route{application={{appid}},controller=index,action=hello}}.
 
 
 hello(<<"GET">>, _, _)   -> 
