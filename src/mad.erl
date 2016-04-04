@@ -64,6 +64,6 @@ help()            -> info("MAD Container Tool version ~s~n",[?VERSION]),
                      info("    params = [] | command [ options  ] params ~n"),
                      info("   command = app     | deps  | clean | compile | up~n"),
                      info("           | release [ beam  | ling  | script  | runc | depot ]~n"),
-                     info("           | deploy  | start | stop  | attach  | sh ~n"),
-                     info("           | create name=<name> tpl=<hello|bossdb> port=<port>~n"),
+                     info("           | deploy  | start | stop  | attach  | sh | static [ <watch|min> ] ~n"),
+                     info("           | create name=<name> tpl=<basic|n2o|bossdb> port=<port>~n"),
                      return(false).
