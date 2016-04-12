@@ -12,8 +12,8 @@ app(Params) ->
     mad:info("TplName = ~p~n",[TplName]),
     mad:info("Vars = ~p~n",[Vars]),
     %%FIXME: maybe add ~/.mad/templates/<>.skel
-    Binary = proplists:get_value("priv/" ++ TplName ++ ".skel", Apps),
-    TemplateTerms = consult(Binary),
+    Skel = proplists:get_value("priv/" ++ TplName ++ ".skel", Apps),
+    TemplateTerms = consult(Skel),
     Vars1 = lists:keyreplace(name, 1, Vars, {appid, AppName}),
     create(Apps, TemplateTerms, Vars1).
 

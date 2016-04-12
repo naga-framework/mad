@@ -30,6 +30,7 @@
 {template, "bossdb/src/controller/project_index.erl", "{{appid}}/apps/{{appid}}/src/controller/{{appid}}_index.erl"}.
 
 {file, "bossdb/src/view/index/index.html", "{{appid}}/apps/{{appid}}/src/view/index/index.html"}.
-{file, "bossdb/src/view/lib/filter_modules/custom_filters.erl", "{{appid}}/apps/{{appid}}/src/view/lib/filter_modules/custom_filters.erl"}.
+{template, "bossdb/src/view/lib/filter_modules/custom_filters.erl", "{{appid}}/apps/{{appid}}/src/view/lib/filter_modules/{{appid}}_custom_filters.erl"}.
 {file, "bossdb/src/view/lib/README", "{{appid}}/apps/{{appid}}/src/view/lib/README"}.
 {file, "bossdb/src/view/lib/tag_modules/custom_tags.erl", "{{appid}}/apps/{{appid}}/src/view/lib/README"}.
+{file, "bossdb/src/model/article.erl", "{{appid}}/apps/{{appid}}/src/model/article.erl"}.

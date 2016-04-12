@@ -1,6 +1,15 @@
 -module({{appid}}).
 -export([start/0, stop/0]).
--export([start_db/0]).
+-export([start_db/0, log_modules/0]).
+
+log_modules() -> [n2o_client,
+                  n2o_nitrogen,
+                  n2o_stream,
+                  wf_convert,
+                  {{appid}}_index,
+                  {{appid}}_error,
+                  {{appid}},
+                  {{appid}}_routes].
 
 start() ->
     application:ensure_all_started({{appid}}).
