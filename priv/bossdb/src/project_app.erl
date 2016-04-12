@@ -8,8 +8,6 @@
 start(_, _) ->
     error_logger:info_msg("Starting application {{appid}}...", []),
     {{appid}}:start_db(),
-    naga:start({{appid}}),
-    naga:start_fcgi({{appid}}),
     {{appid}}_sup:start_link().
 
 -spec stop(_) -> ok.
