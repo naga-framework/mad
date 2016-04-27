@@ -14,12 +14,12 @@ init(State, Ctx) ->
     {Params,_}    =cowboy_req:path_info(Req),
 
     {C,A} = match(Controller,Action),
-    R = #{app    => {{appid}},
-          method => Method,
-          controller => C,          
-          action => A,
-          params => Params,
-          bindings => Bindings
+    R = #{application => {{appid}},
+          method      => Method,
+          controller  => C,  %%module name        
+          action      => A,
+          params      => Params,
+          bindings    => Bindings
          },
     %wf:info(?MODULE, "ROUTE ~p : ~p, ~p",[wf:path(Req), C, A]),
     {ok, State, Ctx#cx{path=R,module=C}}.
