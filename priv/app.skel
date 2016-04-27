@@ -1,0 +1,9 @@
+{variables, [{appid, "{{appid}}" }, {description, "{{description}}"}, {vsn, "{{vsn}}" }]}.
+
+{dir, "{{appid}}"}.
+{dir, "{{appid}}/priv"}.
+{dir, "{{appid}}/src"}.
+
+{template, "app/project.app.src",                "{{appid}}/apps/{{appid}}/src/{{appid}}.app.src"}.
+{template, "app/project.erl",                    "{{appid}}/apps/{{appid}}/src/{{appid}}.erl"}.
+
