@@ -4,6 +4,6 @@
 {dir, "{{appid}}/priv"}.
 {dir, "{{appid}}/src"}.
 
-{template, "app/project.app.src",                "{{appid}}/apps/{{appid}}/src/{{appid}}.app.src"}.
-{template, "app/project.erl",                    "{{appid}}/apps/{{appid}}/src/{{appid}}.erl"}.
+{template, "app/project.app.src",  "{{appid}}/src/{{appid}}.app.src"}.
+{template, "app/project.erl",      "{{appid}}/src/{{appid}}.erl"}.
 
