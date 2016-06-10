@@ -1,4 +1,4 @@
--module({{appid}}_error).
+-module(error).
 -compile(export_all).
 -include_lib("n2o/include/wf.hrl").
 -include_lib("nitro/include/nitro.hrl").

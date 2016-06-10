@@ -1,5 +1,5 @@
 {application, {{appid}},
-  [{description, "{{description}}"},
+  [{description, "{{desc}}"},
    {vsn, "{{vsn}}"},
    {registered, []},
    {applications, [kernel, stdlib]},

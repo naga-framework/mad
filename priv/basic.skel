@@ -25,15 +25,15 @@
 {template, "basic/sys.config",                     "{{appid}}/sys.config"}.
 {template, "basic/project.app.src",                "{{appid}}/apps/{{appid}}/src/{{appid}}.app.src"}.
 {template, "basic/project.erl",                    "{{appid}}/apps/{{appid}}/src/{{appid}}.erl"}.
-{template, "basic/project_controller_index.erl",   "{{appid}}/apps/{{appid}}/src/controller/{{appid}}_index.erl"}.
-{template, "basic/project_controller_error.erl",   "{{appid}}/apps/{{appid}}/src/controller/{{appid}}_error.erl"}.
+{template, "basic/project_controller_index.erl",   "{{appid}}/apps/{{appid}}/src/controller/index.erl"}.
+{template, "basic/project_controller_error.erl",   "{{appid}}/apps/{{appid}}/src/controller/error.erl"}.
 {template, "basic/project_routes.erl",             "{{appid}}/apps/{{appid}}/src/{{appid}}_routes.erl"}.
 {template, "basic/project.routes",                 "{{appid}}/apps/{{appid}}/priv/{{appid}}.routes"}.
 
 {file, "basic/project_view_layout_n2o.html",       "{{appid}}/apps/{{appid}}/src/view/layout/n2o.html"}.
 {file, "basic/project_view_layout_page.html",      "{{appid}}/apps/{{appid}}/src/view/layout/page.html"}.
-{file, "basic/project_view_index_hello.html",      "{{appid}}/apps/{{appid}}/src/view/{{appid}}_index/hello.html"}.
-{file, "basic/project_view_error_404.html",        "{{appid}}/apps/{{appid}}/src/view/{{appid}}_error/404.html"}.
+{file, "basic/project_view_index_hello.html",      "{{appid}}/apps/{{appid}}/src/view/index/hello.html"}.
+{file, "basic/project_view_error_404.html",        "{{appid}}/apps/{{appid}}/src/view/error/404.html"}.
 {file, "basic/project_priv_templates_index.html",  "{{appid}}/apps/{{appid}}/priv/templates/index.html"}.
 {file, "basic/project_priv_static_synrc.css",      "{{appid}}/apps/{{appid}}/priv/static/synrc.css"}.
 {file, "basic/project_priv_static_spa_index.htm",  "{{appid}}/apps/{{appid}}/priv/static/spa/index.htm"}.

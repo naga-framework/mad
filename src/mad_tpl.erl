@@ -6,16 +6,19 @@ app(Params) ->
     mad_repl:load(),
     Apps = ets:tab2list(filesystem),   
     Vars = decode_params(Params),
-    TplName = proplists:get_value(tpl, Vars, "hello"),
-    AppName = proplists:get_value(name, Vars),
-    mad:info("Name = ~p~n",[AppName]),
-    mad:info("TplName = ~p~n",[TplName]),
-    mad:info("Vars = ~p~n",[Vars]),
-    %%FIXME: maybe add ~/.mad/templates/<>.skel
-    Skel = proplists:get_value("priv/" ++ TplName ++ ".skel", Apps),
-    TemplateTerms = consult(Skel),
-    Vars1 = lists:keyreplace(name, 1, Vars, {appid, AppName}),
-    create(Apps, TemplateTerms, Vars1).
+    case proplists:get_value(tpl, Vars) of
+     undefined -> 
+         mad:info("plz specify a template: create tpl=<app|basic|n2o|bossdb> name=<name>...~n",[]),true;
+     TplName -> 
+         AppName = proplists:get_value(name, Vars),
+         mad:info("Name = ~p~n",[AppName]),
+         mad:info("TplName = ~p~n",[TplName]),
+         mad:info("Vars = ~p~n",[Vars]),
+         %%FIXME: maybe add ~/.mad/templates/<>.skel
+         Skel = proplists:get_value("priv/" ++ TplName ++ ".skel", Apps),
+         TemplateTerms = consult(Skel),
+         Vars1 = lists:keyreplace(name, 1, Vars, {appid, AppName}),
+         create(Apps, TemplateTerms, Vars1) end.
 
 lib(_) -> ok.
 
@@ -58,8 +61,9 @@ consult(Source) ->
     {ok, Tokens, _} = erl_scan:string(SourceStr),
     Forms = split_when(fun is_dot/1, Tokens),
     ParseFun = fun (Form) ->
-                       {ok, Expr} = erl_parse:parse_exprs(Form),
-                       Expr
+                       case erl_parse:parse_exprs(Form) of
+                       {ok, Expr} -> Expr;
+                       E -> mad:info("Error mad_tpl ~p", [E]), E end 
                end,
     Parsed = lists:map(ParseFun, Forms),
     ExprsFun = fun(P) ->

@@ -1,4 +1,4 @@
-{variables, [{appid, "{{appid}}" }, {description, "{{description}}"}, {vsn, "{{vsn}}" }]}.
+{variables, [{appid, "{{appid}}"}, {port, 8001}, {desc, "{{desc}}"}, {vsn, "{{vsn}}"} ]}.
 
 {dir, "{{appid}}"}.
 {dir, "{{appid}}/priv"}.
