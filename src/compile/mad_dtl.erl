@@ -2,13 +2,23 @@
 -copyright('Sina Samavati').
 -compile(export_all).
 
+is_naga([])-> false;
+is_naga(O) -> case proplists:get_value(naga,O) of
+                undefined -> false;
+                O1 -> proplists:get_value(enable,O1,false) end.
+
 compile(Dir,Config) ->
     case mad_utils:get_value(erlydtl_opts, Config, []) of
         [] -> false;
          X -> O = validate_erlydtl_opts(Dir,X),
-              case compile_erlydtl_files(O) of true -> true; 
-                false -> case compile_erlydtl_naga_files({naga,view_dir},O) of 
-                         true -> true; false -> compile_erlydtl_naga_files({naga_mail,mail_dir},O) end end end.
+              case is_naga(O) of 
+                false -> compile_erlydtl_files(O); 
+                true  -> case compile_erlydtl_naga_files({naga,view_dir},O) of 
+                          true -> true; 
+                          false -> compile_erlydtl_naga_files({naga_mail,mail_dir},O) 
+                         end 
+              end 
+    end.
 
 get_kv(K, Opts, Default) ->
     V = mad_utils:get_value(K, Opts, Default),
@@ -100,7 +110,7 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
          {custom_tags_dir, mad_naga:modules(htmltags_dir, OO)}],
       
         Files = mad_naga:find_files(DocRoot,NagaExt),
-        
+
         Compile = fun(F) ->
             ModuleName = module_name(F, NagaOpts),
             BeamFile = file_to_beam(OutDir, atom_to_list(ModuleName)),
