@@ -4,7 +4,7 @@
 
 disabled() -> [].
 system() -> [compiler,syntax_tools,sasl,tools,mnesia,reltool,xmerl,crypto,kernel,stdlib,ssh,eldap,
-             wx,webtool,ssl,runtime_tools,public_key,observer,inets,asn1,et,eunit,hipe,os_mon].
+             wx,ssl,runtime_tools,public_key,observer,inets,asn1,et,eunit,hipe,os_mon,parsetools,odbc].
 
 local_app() ->
     case filename:basename(filelib:wildcard("ebin/*.app"),".app") of
@@ -14,7 +14,7 @@ local_app() ->
 applist() ->
     Name = ".applist",
     case file:read_file(Name) of
-         {ok,Binary} -> parse_applist(Binary); 
+         {ok,Binary} -> parse_applist(Binary);
          {error,_} ->
            case mad_repl:load_file(Name) of
               {error,_} -> mad_resolve:main([]);
@@ -28,48 +28,53 @@ parse_applist(AppList) ->
 
 load_config() ->
    Config = wildcards(["sys.config",lists:concat(["etc/",mad:host(),"/sys.config"])]),
-   Apps = case Config of
+   _Apps = case Config of
         [] -> case mad_repl:load_file("sys.config") of
               {error,_} -> [];
               {ok,Bin} -> parse(unicode:characters_to_list(Bin)) end;
       File -> case file:consult(hd(File)) of
               {error,_} -> [];
-              {ok,[A]} -> A end end,
-    load_config(Apps, []).
+              {ok,[A]} -> A end end.
 
-load_config([H|T], Apps2) ->
-    App2 = case H of
-        {App,Cfg} -> [application:set_env(App,K,V) || {K,V} <- Cfg], [H];
-        File when is_list(File) ->
-            Apps = case file:consult(File) of
-                {error,_} -> [];
-                {ok,[A]} -> A end,
-            load_config(Apps, []);
-        _ -> []
-    end,
-    load_config(T, Apps2 ++ App2);
-load_config([], Apps2) ->
-    Apps2.
+load_config(AppConfigs,[]) ->
+    [ [ application:set_env(App,K,V) || {K,V} <- Cfg] || {App,Cfg} <- AppConfigs],
+    load_includes(AppConfigs).
+
+load_includes(AppConfigs) ->
+    [ begin Apps = case file:consult(File) of
+                        {error,_} -> [];
+                        {ok,[A]} -> A end,
+             load_config(Apps, []) end || File <- AppConfigs, is_list(File) ].
 
 acc_start(A,Acc) ->
-   case application:start(A) of
-         {error,{already_started,_}} -> Acc;
-         {error,{_,{{M,_F,_},_Ret}}} -> [M|Acc];
-         {error,{_Reason,Name}} when is_atom(_Reason) -> [Name|Acc];
-         ok -> Acc;
-         _  -> Acc end.
+    application:ensure_all_started(A), Acc.
 
-load_apps([],_,_Acc) ->
-  Res = lists:foldl(fun(A,Acc) -> case lists:member(A,system()) of
-       true -> acc_start(A,Acc);
-          _ -> case load_config(A) of
-                    [] -> acc_start(A,Acc);
-                    _E -> acc_start(_E,Acc) end end end,[], applist()),
-  case Res of
-       [] -> ok;
-       _ -> mad:info("~nApps couldn't be loaded: ~p~n",[Res]) end;
-load_apps(["applist"],Config,Acc) -> load_apps([],Config,Acc);
-load_apps(Params,_,_Acc) -> [ application:ensure_all_started(list_to_atom(A))||A<-Params].
+% for system application we just start, forgot about env merging
+
+load(true,A,Acc,Config) ->
+    load_config(Config,[]),
+    acc_start(A,Acc);
+
+% for user application we should merge app from ebin and from sys.config
+% and start application using tuple argument in app controller
+
+load(_,A,Acc,Config) ->
+    {application,Name,Map} = load_config(A),
+    NewEnv = merge(Config,Map,Name),
+    acc_start({application,Name,set_value(env,1,Map,{env,NewEnv})},Acc).
+
+merge(Config,Map,Name) ->
+    lists:foldl(fun({Name,E},Acc2)   ->
+    lists:foldl(fun({K,V},Acc1)      -> set_value(K,1,Acc1,{K,V}) end,Acc2,E);
+                          (_,Acc2)   -> Acc2 end, proplists:get_value(env,Map,[]), Config).
+
+load_apps([],Config,Acc)             -> [ load(lists:member(A,system()),A,Acc,Config) || A <- applist()];
+load_apps(["applist"],Config,Acc)    -> load_apps([],Config,Acc);
+load_apps(Params,_,_Acc)             -> [ application:ensure_all_started(list_to_atom(A))||A<-Params].
+
+set_value(Name,Pos,List,New)         -> add_replace(lists:keyfind(Name,Pos,List),Name,Pos,List,New).
+add_replace(false,Name,Pos,List,New) -> [New|List];
+add_replace(_____,Name,Pos,List,New) -> lists:keyreplace(Name,Pos,List,New).
 
 cwd() -> case  file:get_cwd() of {ok, Cwd} -> Cwd; _ -> "." end.
 
@@ -89,7 +94,7 @@ sh(Params) ->
     load(),
     Config = load_config(),
     Driver = mad_utils:get_value(shell_driver,_Config,user_drv),
-    repl_intro(),
+    repl_intro(Config),
     case os:type() of
          {win32,nt} -> os:cmd("chcp 65001"), shell:start();
                   _ -> O = whereis(user),
@@ -126,7 +131,7 @@ rewrite_leaders(OldUser, NewUser) ->
                          OldMasters)],
     try   error_logger:swap_handler(tty),
           remove(3)
-    catch E:R -> hope_for_best end.
+    catch _E:_R -> hope_for_best end.
 
 load() ->
     ets_created(),
@@ -139,7 +144,9 @@ unfold_zips(Bin) ->
     [ begin
        try
         ets:insert(filesystem,{unicode:characters_to_list(base64:decode(list_to_binary(U))),FileBin})
-       catch _:_ -> ok end,
+       catch _:_ ->
+        ets:insert(filesystem,{U,FileBin})
+       end,
         case U of
             "static.gz" -> unfold_zips(FileBin);
             _ -> skip end
@@ -172,7 +179,7 @@ parse(String) ->
     {value,Value,_Bs} = erl_eval:exprs(AbsForm, erl_eval:new_bindings()),
     Value.
 
-repl_intro() ->
-    io:format("Configuration: ~p~n", [load_config()]),
+repl_intro(Config) ->
+    io:format("Configuration: ~p~n", [Config]),
     io:format("Applications:  ~p~n", [applist()]).
 

@@ -123,7 +123,7 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
                                         OK -> OK end;
                  true -> ok end
         end,
+
         lists:any(fun({error,_}) -> true; ({ok,_,_}) -> false; ({ok,_}) -> false; (ok) -> false end,[Compile(F) || F <- Files]); 
         _ -> false end.
-
 
