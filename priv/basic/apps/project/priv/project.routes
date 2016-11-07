@@ -1,0 +1,34 @@
+[
+%% DISPATCH RULE: {"URL MATCH" , handler, opts()}
+
+%% cowboy static handler, here single file access.
+  { "/favicon.ico",    cowboy_static, {priv_file, {{appid}}, "static/favicon.ico"}}
+
+%% naga static handler, support gz compression, just gzip your static file
+%% you need to keep uncompressed version and a compression version in your static folder, according to client capabiliti
+%% the according version will be serve either from disk or memory  
+ ,{ "/n2o/[...]", naga_static, { dir, "deps/n2o/priv", [ { mimetypes, cow_mimetypes, all } ] }}
+ ,{ "/{{appid}}/static/[...]", naga_static, { dir, "deps/{{appid}}/priv", [ { mimetypes, cow_mimetypes, all } ] }}
+
+%% naga convenient handler.
+ ,{"/$v/[...]", naga_indexof, { {{appid}},view,"/$v"}}
+%,{"/$c/[...]", naga_indexof, { {{appid}},controller,"/$c"}}
+ ,{"/$s/[...]", naga_indexof, { {{appid}},static,"/$s"}}
+
+ 
+ %% YOUR RULES: dispatch {url/path}|code => application/controller/action
+ %% no support for regex in url/path
+ %% app is default alias for application
+ %% ctrl is default alias for controller
+ %% act is default alias for action
+ %% you can redefine alias add in naga config section using
+ %%   {def_application, a},
+ %%   {def_controller, c}
+ %%   {def_action, ac}  where a,c,ac are atom
+   
+ ,{ "/index",    [{app, {{appid}} },{ctrl, index},{action,index}], []}
+ ,{ "/",         [{app, {{appid}} },{ctrl, index},{action,index},{id, 42}], []}
+ 
+ ,{ 404, [{application, {{appid}} },{controller, error}, {action, '404'}], []}
+ ,{ 500, [{application, {{appid}} },{controller, error}, {action, '500'}], []}
+].

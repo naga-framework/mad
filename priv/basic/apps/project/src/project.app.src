@@ -1,6 +1,6 @@
 {application, {{appid}},
-  [{description, "my awesome {{appid}} "},
-   {vsn, "0.2"},
+  [{description, "{{desc}}"},
+   {vsn, "{{vsn}}"},
    {registered, []},
    {applications, [kernel, stdlib, naga]},
    {mod, { {{appid}}, []}},
