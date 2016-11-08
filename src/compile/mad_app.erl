@@ -22,7 +22,6 @@ compile(File,_Inc,Bin,_Opt,_Deps) ->
         mad:info("Writing ~s~n", [AppFile -- mad_utils:cwd()]),
         BeamFiles = filelib:wildcard("*.beam", Bin),
         Modules = [list_to_atom(filename:basename(X, ".beam")) || X <- BeamFiles],
-        %[Struct|_] = mad_utils:consult(File),
         [Struct|_] = consult(File),
         {application, AppName, Props} = Struct,
         Props0 = add_modules_property(Props),
