@@ -4,7 +4,7 @@
 
 disabled() -> [].
 system() -> [compiler,syntax_tools,sasl,tools,mnesia,reltool,xmerl,crypto,kernel,stdlib,ssh,eldap,
-             wx,ssl,runtime_tools,public_key,observer,inets,asn1,et,eunit,hipe,os_mon,parsetools,odbc].
+             wx,ssl,runtime_tools,public_key,observer,inets,asn1,et,eunit,hipe,os_mon,parsetools,odbc,n2o].
 
 local_app() ->
     case filename:basename(filelib:wildcard("ebin/*.app"),".app") of
@@ -59,9 +59,15 @@ load(true,A,Acc,Config) ->
 % and start application using tuple argument in app controller
 
 load(_,A,Acc,Config) ->
-    {application,Name,Map} = load_config(A),
-    NewEnv = merge(Config,Map,Name),
-    acc_start({application,Name,set_value(env,1,Map,{env,NewEnv})},Acc).
+    load_config(Config,[]),
+    acc_start(A,Acc).
+% load(_,A,Acc,Config) ->
+%     {application,Name,Map} = load_config(A),
+%     io:format(">>> ~p => Map ~p~n",[Name, Map]),
+%     NewEnv = merge(Config,Map,Name),
+%     io:format(">>> ~p => Config ~p~n",[Name,Config]),
+%     io:format(">>> ~p => NewEnv ~p~n",[Name,NewEnv]),
+%     acc_start({application,Name,set_value(env,1,Map,{env,NewEnv})},Acc).
 
 merge(Config,Map,Name) ->
     lists:foldl(fun({Name,E},Acc2)   ->
@@ -102,6 +108,7 @@ sh(Params) ->
                        Driver:start(),
                        wait(3000),
                        rewrite_leaders(O,whereis(user)) end,
+    mad:info(">>>>>> mad params ~p~n",[Params]),
     load_apps(Params,Config,[]),
     case Params of
         ["applist"] -> skip;
