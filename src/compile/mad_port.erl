@@ -116,16 +116,17 @@ tpl_ld(drv,cxx) -> " $PORT_IN_FILES $LDFLAGS $DRV_LDFLAGS -o $PORT_OUT_FILE";
 tpl_ld(exe,cc)  -> " $PORT_IN_FILES $LDFLAGS $EXE_LDFLAGS -o $PORT_OUT_FILE";
 tpl_ld(exe,cxx) -> " $PORT_IN_FILES $LDFLAGS $EXE_LDFLAGS -o $PORT_OUT_FILE".
 
+erl_ldflag() -> concat([" -I", ei_dir(include)," -I", erts_dir(include), " "]).
+
 default_env() ->
     Arch = os:getenv("REBAR_TARGET_ARCH"),
     Vsn = os:getenv("REBAR_TARGET_ARCH_VSN"),
     [
-     {"darwin", "DRV_LDFLAGS", "-bundle -flat_namespace -undefined suppress -L$ERL_EI_LIBDIR -lerl_interface -lei"},
-     {"DRV_CFLAGS" , "-g -Wall -fPIC -MMD $ERL_CFLAGS"},
-     {"DRV_LDFLAGS", "-shared $ERL_LDFLAGS"},
-     {"EXE_CFLAGS" , "-g -Wall -fPIC -MMD $ERL_CFLAGS"},
-     {"EXE_LDFLAGS", "-L$ERL_EI_LIBDIR -lerl_interface -lei"},
-     {"ERL_CFLAGS", concat([" -I", ei_dir(include)," -I", erts_dir(include)])},
+     {"darwin", "DRV_LDFLAGS", "-bundle -flat_namespace -undefined suppress -L" ++ei_dir(lib) ++" -lerl_interface -lei"},
+     {"DRV_CFLAGS" , "-g -Wall -fPIC -MMD " ++ erl_ldflag()},
+     {"DRV_LDFLAGS", "-shared " ++ erl_ldflag()},
+     {"EXE_CFLAGS" , "-g -Wall -fPIC -MMD " ++ erl_ldflag()},
+     {"EXE_LDFLAGS", "-L" ++ei_dir(lib)++" -lerl_interface -lei"},
      {"ERL_EI_LIBDIR", ei_dir(lib)}
     ].
 
