@@ -47,23 +47,26 @@ compile_port(Dir,Specs0,Config) ->
                             end,[],[Compile(F) || F <- Files]),
 
           %%if any ok recompile target
-          case Res of {error,_} = Err -> Err; Res ->
-          case lists:any(fun({ok,_}) -> true;(_)->false end, Res) of
-            false -> false; %% all even, no need to link target
-            true ->  Objs = [O||{_,O} <-Res],
-                     Env2  = [{"PORT_IN_FILES", string:join(Objs," ")},
-                              {"PORT_OUT_FILE", Target}] ++ Env ++ default_env(),
-                     TplLD = tpl_ld(TargetType,LinkLang),
-                     CmdLD = string:strip(expand(System,TplLD,Env2)),
-                     Cmd = expand(System,CmdLD,[{"CXXFLAGS",""},{"LDFLAGS",""},{"CFLAGS",""}]),
-                     mad:info("cc ~s~n",[Cmd]),
-                     {_,Status,Report} = sh:run("cc",string:tokens(Cmd," "),binary,Dir,Env),
-                     case Status of 
-                      0 -> false;
-                      _ -> mad:info("Port Compilation Error:~n" ++ io_lib:format("~ts",[Report]),[]),
-                           {error, Report},true
-                     end                      
-          end
+          case Res of 
+            {error,_} = Err -> 
+              mad:info("Port Compilation Error:~n" ++ io_lib:format("~p",[Err]),[]),true; 
+            Res ->
+              case lists:any(fun({ok,_}) -> true;(_)->false end, Res) of
+                false -> false; %% all even, no need to link target
+                true ->  Objs = [O||{_,O} <-Res],
+                         Env2  = [{"PORT_IN_FILES", string:join(Objs," ")},
+                                  {"PORT_OUT_FILE", Target}] ++ Env ++ default_env(),
+                         TplLD = tpl_ld(TargetType,LinkLang),
+                         CmdLD = string:strip(expand(System,TplLD,Env2)),
+                         Cmd = expand(System,CmdLD,[{"CXXFLAGS",""},{"LDFLAGS",""},{"CFLAGS",""}]),
+                         mad:info("cc ~s~n",[Cmd]),
+                         {_,Status,Report} = sh:run("cc",string:tokens(Cmd," "),binary,Dir,Env),
+                         case Status of 
+                          0 -> false;
+                          _ -> mad:info("Port Compilation Error:~n" ++ io_lib:format("~ts",[Report]),[]),
+                               {error, Report},true
+                         end                      
+              end
           end
         end,
   [Job(S)||S<-Specs].
