@@ -36,11 +36,12 @@ compile_port(Dir,Specs0,Config) ->
                             0 -> {ok,Obj} ;
                             _ -> {error, "Port Compilation Error:~n" ++ io_lib:format("~ts",[Report])},true
                            end;
-                        true -> {ok,Obj}
+                        true -> {even,Obj}
                        end 
                     end,
 
           Res = lists:foldl(fun({ok,X},Acc)   -> [X|Acc];
+                               ({event,X},Acc)-> [X|Acc];
                                ({error,Err},_)-> {error,Err} 
                             end,[],[Compile(F) || F <- Files]),
           case Res of
@@ -75,30 +76,26 @@ expand(System, String, [{Sys,K,V}|Env]) ->
   end.
 
 extension(F)       -> filename:extension(F).
-is_compiled(O,F)   -> filelib:is_file(O) andalso  
-                      (mad_utils:last_modified(O) >= mad_utils:last_modified(F)). 
+is_compiled(O,F)   -> filelib:is_file(O) andalso (mad_utils:last_modified(O) >= mad_utils:last_modified(F)). 
 join(A,B)          -> filename:join(A,B).
 concat(X)          -> lists:concat(X).
 system(Sys,System) -> Sys == System orelse match(Sys,System).
 match(Re,System)   -> case re:run(System, Re, [{capture,none}]) of match -> true; nomatch -> false end.
 erts_dir()         -> join(code:root_dir(), concat(["erts-", erlang:system_info(version)])) .
-erts_dir(T)        -> join(erts_dir(), atom_to_list(T)).
-ei_dir(T)          -> case code:lib_dir(erl_interface) of 
-                        {error,bad_name} -> 
-                            throw({error, {erl_interface,"code:lib_dir(erl_interface)"
-                                                         "is unable to find the erl_interface library."}}); 
-                        D -> filename:join(D, atom_to_list(T)) end.
+erts_dir(include)  -> " -I"++join(erts_dir(), "include").
+ei_dir()           -> case code:lib_dir(erl_interface) of {error,bad_name} -> ""; E -> E end.
+ei_dir(include)    -> case ei_dir() of "" -> ""; E -> " -I"++join(E,"include") end.
+ei_dir(lib)        -> case ei_dir() of "" -> ""; E -> " -L"++join(E,"lib") end.
 link_lang(Files)   -> lists:foldl(fun(F,cxx) -> cxx;
                                      (F,cc) -> case compiler(extension(F)) == "$CXX" of 
-                                                true -> cxx;
-                                                false -> cc 
-                                               end
+                                                true -> cxx;false -> cc end
                                   end,cc,Files).
 
 files(Dir,Patterns)-> files(Dir,Patterns, []).
 files(_,[], Acc) -> lists:reverse(Acc);
 files(D,[H|T], Acc) ->
-  files(D,T,filelib:wildcard(join(D,H))++Acc). 
+  files(D,T,filelib:wildcard(H)++Acc). 
+  %files(D,T,filelib:wildcard(join(D,H))++Acc). 
 
 
 target_type(".so")   -> drv;
@@ -116,17 +113,17 @@ tpl_ld(drv,cxx) -> " $PORT_IN_FILES $LDFLAGS $DRV_LDFLAGS -o $PORT_OUT_FILE";
 tpl_ld(exe,cc)  -> " $PORT_IN_FILES $LDFLAGS $EXE_LDFLAGS -o $PORT_OUT_FILE";
 tpl_ld(exe,cxx) -> " $PORT_IN_FILES $LDFLAGS $EXE_LDFLAGS -o $PORT_OUT_FILE".
 
-erl_ldflag() -> concat([" -I", ei_dir(include)," -I", erts_dir(include), " "]).
+erl_ldflag() -> concat([ei_dir(include), erts_dir(include), " "]).
 
 default_env() ->
     Arch = os:getenv("REBAR_TARGET_ARCH"),
     Vsn = os:getenv("REBAR_TARGET_ARCH_VSN"),
     [
-     {"darwin", "DRV_LDFLAGS", "-bundle -flat_namespace -undefined suppress -L" ++ei_dir(lib) ++" -lerl_interface -lei"},
+     {"darwin", "DRV_LDFLAGS", "-bundle -flat_namespace -undefined suppress " ++ei_dir(lib) ++" -lerl_interface -lei"},
      {"DRV_CFLAGS" , "-g -Wall -fPIC -MMD " ++ erl_ldflag()},
      {"DRV_LDFLAGS", "-shared " ++ erl_ldflag()},
      {"EXE_CFLAGS" , "-g -Wall -fPIC -MMD " ++ erl_ldflag()},
-     {"EXE_LDFLAGS", "-L" ++ei_dir(lib)++" -lerl_interface -lei"},
+     {"EXE_LDFLAGS", ei_dir(lib)++" -lerl_interface -lei"},
      {"ERL_EI_LIBDIR", ei_dir(lib)}
     ].
 
