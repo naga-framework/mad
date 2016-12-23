@@ -59,7 +59,6 @@ compile_erlydtl_files(Opts) ->
 
     Files = filelib:fold_files(DocRoot, SourceExt++"$", true,
                                fun(F, Acc) -> [F|Acc] end, []),
-
     Compile = fun(F) ->
         ModuleName = module_name(F, SourceExt, ModuleExt),
         BeamFile = file_to_beam(OutDir, atom_to_list(ModuleName)),
@@ -81,6 +80,7 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
     {{_, Naga},    O1} = get_kv(App0,    Opts, []),    
     {{_, OutDir},  O2} = get_kv(out_dir, O1, "ebin"),
     {{_, Cwd},     O3} = get_kv(cwd,     O2, ""),
+    {{_, CO},      _ } = get_kv(compiler_options, O3, ""),
 
     Get = fun(X) -> 
             {{_, Val },  _} = get_kv(X, Naga, proplists:get_value(X, mad_naga:cfg_dtl())),
@@ -107,7 +107,7 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
          {auto_escape, AutoEscape},
          {custom_filters_modules,mad_naga:modules(tag_dir, OO)++mad_naga:modules(filter_dir, OO)},
          {custom_tags_modules, mad_naga:modules(custom_tags, OO)},
-         {custom_tags_dir, mad_naga:modules(htmltags_dir, OO)}],
+         {custom_tags_dir, mad_naga:modules(htmltags_dir, OO)}] ++ CO,
       
         Files = mad_naga:find_files(DocRoot,NagaExt),
 
@@ -119,11 +119,12 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
                  %mad:info("DTL options ~p",[NagaOpts]),
                  mad:info("DTL Compiling ~s --> ~s~n", [F -- mad_utils:cwd(), atom_to_list(ModuleName)]),
                  Res = erlydtl:compile(F, ModuleName, NagaOpts),
-                 case Res of {error,Error} -> mad:info("Error: ~p~n",[Error]);
-                                        OK -> OK end;
+                 case Res of {error,Error,_} -> mad:info("Error: ~p~n",[Error]),{error,Error};
+                             {error,Error}   -> mad:info("Error: ~p~n",[Error]),{error,Error};
+                                        OK   -> OK end;
                  true -> ok end
         end,
 
-        lists:any(fun({error,_}) -> true; ({ok,_,_}) -> false; ({ok,_}) -> false; (ok) -> false end,[Compile(F) || F <- Files]); 
+        lists:any(fun({error,_}) -> true;({ok,_,_}) -> false; ({ok,_}) -> false; (ok) -> false end,[Compile(F) || F <- Files]); 
         _ -> false end.
 
