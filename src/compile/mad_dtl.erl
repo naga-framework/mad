@@ -2,6 +2,8 @@
 -copyright('Sina Samavati').
 -compile(export_all).
 
+-define(CUSTOM_TAGS_DIR_MODULE, '_view_lib_tags').
+
 is_naga([])-> false;
 is_naga(O) -> case proplists:get_value(naga,O) of
                 undefined -> false;
@@ -91,40 +93,60 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
         NagaExt   = Get(extensions),
         Force     = Get(force),
         DocRoot   = filename:join(Cwd,Get(D)),
-        TagDir    = filename:join(Cwd,Get(tag_dir)),
+        TagModDir = filename:join(Cwd,Get(tag_dir)),
         FilterDir = filename:join(Cwd,Get(filter_dir)),
         HtmlTags  = filename:join(Cwd,Get(htmltags_dir)),
         CustomTags= filename:join(Cwd,Get(custom_tags)),
         AutoEscape= Get(auto_escape),
         App       = filename:basename(Cwd),
+
         OO = [ {cwd,Cwd},{app,App},{extensions, NagaExt},{view_dir, DocRoot}
-              ,{htmltags_dir, HtmlTags},{tag_dir, TagDir}
+              ,{htmltags_dir, HtmlTags},{tag_dir, TagModDir}
               ,{filter_dir, FilterDir},{custom_tags, CustomTags}
               ],
+
+        TagHelpers = mad_naga:modules(tag_dir, OO), 
+        FilterHelpers = mad_naga:modules(filter_dir, OO),
+        ExtraTagHelpers = wf:config(App,template_tag_modules,[]),
+        ExtraFilterHelpers = wf:config(App,template_filter_modules,[]),
+        HelperDirModule = list_to_atom(lists:concat([App, ?CUSTOM_TAGS_DIR_MODULE])),
+        TagModules = TagHelpers ++ ExtraTagHelpers,
+        FilterModules = FilterHelpers ++ ExtraFilterHelpers,
         NagaOpts = [
-         {cwd, Cwd},{doc_root, DocRoot},
-         {app,App},{extensions, NagaExt},{out_dir, OutDir},
+         {cwd, Cwd},{doc_root, DocRoot},{app,App},
+         {extensions, NagaExt},{out_dir, OutDir},
          {auto_escape, AutoEscape},
-         {custom_filters_modules,mad_naga:modules(tag_dir, OO)++mad_naga:modules(filter_dir, OO)},
-         {custom_tags_modules, mad_naga:modules(custom_tags, OO)},
-         {custom_tags_dir, mad_naga:modules(htmltags_dir, OO)}] ++ CO,
-      
-        Files = mad_naga:find_files(DocRoot,NagaExt),
+         {custom_filters_modules, FilterModules}
+         ] ++ CO,
+
+        All = mad_naga:find_files(DocRoot,NagaExt),
+        Tags= mad_naga:find_files(HtmlTags,[{".html",[]}]),
+        Views  =  All -- Tags,
+
+        %%FIXME: compile only if tag file have changed
+        Res0 = erlydtl:compile_dir(HtmlTags, HelperDirModule, NagaOpts), 
+        case Res0 of {error,Err0,_} -> mad:info("Error: ~p~n",[Err0]),{error,Err0};
+                     {error,Err0}   -> mad:info("Error: ~p~n",[Err0]),{error,Err0};
+                               OK0  -> OK0 end,
+
+        code:add_path(filename:join(["apps",App,"ebin"])),
+        %mad:info("DTL lib_dir(~s) -> ~p~n",[App,code:lib_dir(list_to_atom(App))]),
 
         Compile = fun(F) ->
             ModuleName = module_name(F, NagaOpts),
             BeamFile = file_to_beam(OutDir, atom_to_list(ModuleName)),
             Compiled = mad_compile:is_compiled(BeamFile, F),
             if  Compiled =:= false orelse Force ->
-                 %mad:info("DTL options ~p",[NagaOpts]),
+                 NagaOpts1 = NagaOpts ++[{custom_tags_modules, TagModules ++ [HelperDirModule]}],
+                 %mad:info("DTL options ~p~n",[NagaOpts1]),
                  mad:info("DTL Compiling ~s --> ~s~n", [F -- mad_utils:cwd(), atom_to_list(ModuleName)]),
-                 Res = erlydtl:compile(F, ModuleName, NagaOpts),
+                 Res = erlydtl:compile(F, ModuleName, NagaOpts1),
                  case Res of {error,Error,_} -> mad:info("Error: ~p~n",[Error]),{error,Error};
                              {error,Error}   -> mad:info("Error: ~p~n",[Error]),{error,Error};
                                         OK   -> OK end;
                  true -> ok end
         end,
 
-        lists:any(fun({error,_}) -> true;({ok,_,_}) -> false; ({ok,_}) -> false; (ok) -> false end,[Compile(F) || F <- Files]); 
+        lists:any(fun({error,_}) -> true;({ok,_,_}) -> false; ({ok,_}) -> false; (ok) -> false end,[Compile(F) || F <- Views]); 
         _ -> false end.
 

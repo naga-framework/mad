@@ -67,9 +67,9 @@ dep(Cwd, _Conf, ConfigFile, Name) ->
 
             Opts = mad_utils:get_value(erl_opts, Conf1, []),
             ModelStatus = mad_boss:compile(DepPath,Conf1,IncDir,Includes),
-            DTLStatus = mad_dtl:compile(DepPath,Conf1),
             SortedFiles = mad_naga:sorted_files(Files),%%support for boss_db project
             FilesStatus = compile_files(SortedFiles,IncDir, EbinDir, Opts,Includes),
+            DTLStatus = mad_dtl:compile(DepPath,Conf1),
             PortStatus = lists:any(fun(X)->X end,mad_port:compile(DepPath,Conf1)),
 
             put(Name, compiled),
