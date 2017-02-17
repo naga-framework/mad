@@ -122,15 +122,15 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
         All = mad_naga:find_files(DocRoot,NagaExt),
         Tags= mad_naga:find_files(HtmlTags,[{".html",[]}]),
         Views  =  All -- Tags,
+        
+        code:add_path(filename:join([Cwd,"ebin"])),
+        %code:add_path(filename:join(["apps",App,"ebin"])),
 
         %%FIXME: compile only if tag file have changed
         Res0 = erlydtl:compile_dir(HtmlTags, HelperDirModule, NagaOpts), 
         case Res0 of {error,Err0,_} -> mad:info("Error: ~p~n",[Err0]),{error,Err0};
                      {error,Err0}   -> mad:info("Error: ~p~n",[Err0]),{error,Err0};
                                OK0  -> OK0 end,
-
-        code:add_path(filename:join(["apps",App,"ebin"])),
-        %mad:info("DTL lib_dir(~s) -> ~p~n",[App,code:lib_dir(list_to_atom(App))]),
 
         Compile = fun(F) ->
             ModuleName = module_name(F, NagaOpts),
