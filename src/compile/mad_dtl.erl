@@ -95,23 +95,26 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
         DocRoot   = filename:join(Cwd,Get(D)),
         TagModDir = filename:join(Cwd,Get(tag_dir)),
         FilterDir = filename:join(Cwd,Get(filter_dir)),
-        HtmlTags  = filename:join(Cwd,Get(htmltags_dir)),
+       HtmlTagsDir= filename:join(Cwd,Get(htmltags_dir)),
         CustomTags= filename:join(Cwd,Get(custom_tags)),
         AutoEscape= Get(auto_escape),
         App       = filename:basename(Cwd),
 
         OO = [ {cwd,Cwd},{app,App},{extensions, NagaExt},{view_dir, DocRoot}
-              ,{htmltags_dir, HtmlTags},{tag_dir, TagModDir}
-              ,{filter_dir, FilterDir},{custom_tags, CustomTags}
-              ],
+              ,{htmltags_dir, HtmlTagsDir},{tag_dir, TagModDir}
+              ,{filter_dir, FilterDir},{custom_tags, CustomTags}],
 
         TagHelpers = mad_naga:modules(tag_dir, OO), 
         FilterHelpers = mad_naga:modules(filter_dir, OO),
+
         ExtraTagHelpers = wf:config(App,template_tag_modules,[]),
         ExtraFilterHelpers = wf:config(App,template_filter_modules,[]),
-        HelperDirModule = list_to_atom(lists:concat([App, ?CUSTOM_TAGS_DIR_MODULE])),
-        TagModules = TagHelpers ++ ExtraTagHelpers,
-        FilterModules = FilterHelpers ++ ExtraFilterHelpers,
+
+        HelperModuleName = lists:concat([App, ?CUSTOM_TAGS_DIR_MODULE]),
+        HelperModule = list_to_atom(HelperModuleName),
+        TagModules = ensure_helper(OutDir,TagHelpers ++ ExtraTagHelpers),
+        FilterModules = ensure_helper(OutDir,FilterHelpers ++ ExtraFilterHelpers),
+
         NagaOpts = [
          {cwd, Cwd},{doc_root, DocRoot},{app,App},
          {extensions, NagaExt},{out_dir, OutDir},
@@ -119,25 +122,19 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
          {custom_filters_modules, FilterModules}
          ] ++ CO,
 
-        All = mad_naga:find_files(DocRoot,NagaExt),
-        Tags= mad_naga:find_files(HtmlTags,[{".html",[]}]),
-        Views  =  All -- Tags,
-        
-        code:add_path(filename:join([Cwd,"ebin"])),
-        %code:add_path(filename:join(["apps",App,"ebin"])),
+        All  = mad_naga:find_files(DocRoot,NagaExt),
+        Tags = mad_naga:find_files(HtmlTagsDir,[{".html",[]}]),
+        Views= All -- Tags,
 
-        %%FIXME: compile only if tag file have changed
-        Res0 = erlydtl:compile_dir(HtmlTags, HelperDirModule, NagaOpts), 
-        case Res0 of {error,Err0,_} -> mad:info("Error: ~p~n",[Err0]),{error,Err0};
-                     {error,Err0}   -> mad:info("Error: ~p~n",[Err0]),{error,Err0};
-                               OK0  -> OK0 end,
+        NagaOpts1 = case ensure_tags(Tags,HtmlTagsDir,OutDir,HelperModuleName,NagaOpts) of
+          {ok, HelperModule} -> NagaOpts ++[{custom_tags_modules, TagModules ++ [HelperModule]}];
+          _ -> NagaOpts ++[{custom_tags_modules, TagModules}] end,
 
         Compile = fun(F) ->
             ModuleName = module_name(F, NagaOpts),
             BeamFile = file_to_beam(OutDir, atom_to_list(ModuleName)),
             Compiled = mad_compile:is_compiled(BeamFile, F),
             if  Compiled =:= false orelse Force ->
-                 NagaOpts1 = NagaOpts ++[{custom_tags_modules, TagModules ++ [HelperDirModule]}],
                  %mad:info("DTL options ~p~n",[NagaOpts1]),
                  mad:info("DTL Compiling ~s --> ~s~n", [F -- mad_utils:cwd(), atom_to_list(ModuleName)]),
                  Res = erlydtl:compile(F, ModuleName, NagaOpts1),
@@ -150,3 +147,40 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
         lists:any(fun({error,_}) -> true;({ok,_,_}) -> false; ({ok,_}) -> false; (ok) -> false end,[Compile(F) || F <- Views]); 
         _ -> false end.
 
+ensure_tags(Files, Dir, OutDir, ModuleName, Opts) ->
+  Beam = file_to_beam(OutDir, ModuleName),
+  Module = list_to_atom(ModuleName),
+  Filename = filename:join([OutDir,ModuleName]),
+  case lists:member(false, [is_compiled(Beam,F)||F<-Files]) of
+    true -> Res = erlydtl:compile_dir(Dir, Module, Opts), 
+            case Res of 
+               {error,Err,_} -> mad:info("Error: ~p~n",[Err]),
+                                 {error,Err};
+               {error,Err}   -> mad:info("Error: ~p~n",[Err]),
+                                 {error,Err};
+                         OK  -> code:purge(Module),
+                                case code:load_abs(Filename) of
+                                  {module, Module} -> {ok, Module};
+                                  Error -> Error
+                                end 
+            end;
+    false-> code:purge(Module),
+            case code:load_abs(Filename) of
+              {module, Module} -> {ok, Module};
+              Error -> Error
+            end
+  end.
+
+ensure_helper(OutDir,L) ->
+  [begin 
+      case code:is_loaded(X) of
+        {file, _Loaded} ->  X;
+        false-> F = filename:join([OutDir,X]),
+                case code:load_abs(F) of
+                  {module, M} -> M;
+                  Error -> []
+                end
+      end
+   end || X <- L].
+
+is_compiled(O,F) -> filelib:is_file(O) andalso (mad_utils:last_modified(O) >= mad_utils:last_modified(F)). 
