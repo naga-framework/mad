@@ -97,6 +97,8 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
         FilterDir = filename:join(Cwd,Get(filter_dir)),
        HtmlTagsDir= filename:join(Cwd,Get(htmltags_dir)),
         CustomTags= filename:join(Cwd,Get(custom_tags)),
+        Tags0     = proplists:get_value(template_tag_modules,Naga,[]),
+        Filters0  = proplists:get_value(template_filter_modules,Naga,[]),
         AutoEscape= Get(auto_escape),
         App       = filename:basename(Cwd),
 
@@ -107,13 +109,16 @@ compile_erlydtl_naga_files({App0,D}, Opts) ->
         TagHelpers = mad_naga:modules(tag_dir, OO), 
         FilterHelpers = mad_naga:modules(filter_dir, OO),
 
-        ExtraTagHelpers = wf:config(App,template_tag_modules,[]),
-        ExtraFilterHelpers = wf:config(App,template_filter_modules,[]),
+        ExtraTagHelpers = lists:usort(wf:config(App,template_tag_modules,[])++Tags0),
+        ExtraFilterHelpers =  lists:usort(wf:config(App,template_filter_modules,[])++Filters0),
 
         HelperModuleName = lists:concat([App, ?CUSTOM_TAGS_DIR_MODULE]),
         HelperModule = list_to_atom(HelperModuleName),
         TagModules = ensure_helper(OutDir,TagHelpers ++ ExtraTagHelpers),
         FilterModules = ensure_helper(OutDir,FilterHelpers ++ ExtraFilterHelpers),
+
+        mad:info("DTL ~p:TagModules    ~p~n",[App,TagModules]),
+        mad:info("DTL ~p:FilterModules ~p~n",[App,FilterModules]),
 
         NagaOpts = [
          {cwd, Cwd},{doc_root, DocRoot},{app,App},
