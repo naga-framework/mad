@@ -40,8 +40,9 @@ dep(Cwd, _Conf, ConfigFile, Name) ->
     SrcDir = filename:join([mad_utils:src(DepPath)]),
     AllFiles = files(SrcDir,".yrl") ++ 
                files(SrcDir,".xrl") ++ 
-               files(SrcDir,".erl") ++ % comment this to build with erlc/1
-               files(SrcDir,".app.src"),
+               files(SrcDir,".erl"), % comment this to build with erlc/1
+               %files(SrcDir,".app.src"),
+    AppFile  = files(SrcDir,".app.src"),
     Files = case mad_utils:get_value(erl_first_files, Conf1, []) of
                 []         -> AllFiles;
                 FirstFiles ->
@@ -67,13 +68,14 @@ dep(Cwd, _Conf, ConfigFile, Name) ->
 
             Opts = mad_utils:get_value(erl_opts, Conf1, []),
             ModelStatus = mad_boss:compile(DepPath,Conf1,IncDir,Includes),
-            SortedFiles = mad_naga:sorted_files(Files),%%support for boss_db project
-            FilesStatus = compile_files(SortedFiles,IncDir, EbinDir, Opts,Includes),
+            %SortedFiles = mad_naga:sorted_files(Files),%%support for boss_db project
+            FilesStatus = compile_files(Files, IncDir, EbinDir, Opts,Includes),
             DTLStatus = mad_dtl:compile(DepPath,Conf1),
+            AppStatus = compile_files(AppFile,IncDir, EbinDir, Opts,Includes),
             PortStatus = lists:any(fun(X)->X end,mad_port:compile(DepPath,Conf1)),
 
             put(Name, compiled),
-            case DepsRes orelse FilesStatus orelse DTLStatus orelse PortStatus orelse ModelStatus of
+            case DepsRes orelse FilesStatus orelse DTLStatus orelse PortStatus orelse ModelStatus orelse AppStatus of
                  true -> {error,Name};
                  false -> {ok,Name} end end.
 
